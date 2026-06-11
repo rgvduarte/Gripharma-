@@ -5,25 +5,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gripharma — Entregas ao Domicílio | Gestão para Farmácias</title>
   <meta name="description" content="Software web para a farmácia gerir as entregas ao domicílio: registar pedidos, faturar, recolher e confirmar entregas, com rasto de quem fez o quê. Corre no PC e no telemóvel do estafeta." />
-  <meta name="theme-color" content="#7bbf2e" />
+  <meta name="theme-color" content="#6fae28" />
   <link rel="icon" type="image/svg+xml" href="assets/logo.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="landing.css" />
   <meta property="og:title" content="Gripharma — Entregas ao Domicílio" />
   <meta property="og:description" content="Gestão de entregas ao domicílio para farmácias, web-based. Compatível com o vosso fluxo Sifarma." />
   <meta property="og:type" content="website" />
 </head>
 <body>
+  <!-- ===================== Sprite de ícones (Lucide) ===================== -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="i-pill" viewBox="0 0 24 24"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></symbol>
+    <symbol id="i-smartphone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-nav" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></symbol>
+    <symbol id="i-clipboard" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></symbol>
+    <symbol id="i-bike" viewBox="0 0 24 24"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+    <symbol id="i-snow" viewBox="0 0 24 24"><path d="M2 12h20"/><path d="M12 2v20"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></symbol>
+  </svg>
+
   <!-- ================================ NAV ================================ -->
   <header class="nav">
     <div class="wrap nav-inner">
       <a class="nav-brand" href="#top">
-        <img src="assets/logo.jpg" alt="Gripharma" />
+        <img src="assets/logo.jpg" alt="Logótipo gripharma" />
         <span>Entregas</span>
       </a>
       <nav class="nav-links">
         <a href="#funcionalidades">Funcionalidades</a>
         <a href="#como-funciona">Como funciona</a>
-        <a href="app.html" class="btn btn-primary btn-sm">Abrir aplicação →</a>
+        <a href="app.html" class="btn btn-primary btn-sm">Abrir aplicação <svg class="icon icon-sm"><use href="#i-arrow"/></svg></a>
       </nav>
     </div>
   </header>
@@ -32,53 +53,54 @@
   <main id="top">
     <section class="hero">
       <div class="wrap hero-inner">
-        <div>
-          <span class="eyebrow">💊 Feito para farmácias</span>
+        <div class="reveal">
+          <span class="eyebrow"><svg class="icon"><use href="#i-pill"/></svg> Feito para farmácias</span>
           <h1>As entregas ao domicílio da farmácia, <span class="hl">finalmente organizadas</span>.</h1>
           <p class="lead">
             Regista pedidos, fatura, prepara, o estafeta recolhe e confirma a entrega —
             tudo num só sítio, no computador da farmácia e no telemóvel do estafeta.
           </p>
           <div class="hero-cta">
-            <a href="app.html" class="btn btn-primary">Experimentar agora</a>
+            <a href="app.html" class="btn btn-primary">Experimentar agora <svg class="icon icon-sm"><use href="#i-arrow"/></svg></a>
             <a href="#funcionalidades" class="btn btn-ghost">Ver funcionalidades</a>
           </div>
           <p class="hero-note">
-            ✅ Web-based · corre em <b>Windows</b> e telemóvel &nbsp;·&nbsp; 🤝 Complementa o vosso <b>Sifarma</b>
+            <span><svg class="icon"><use href="#i-check"/></svg> Web-based · corre em <b>Windows</b> e telemóvel</span>
+            <span><svg class="icon"><use href="#i-shield"/></svg> Complementa o vosso <b>Sifarma</b></span>
           </p>
         </div>
 
         <!-- Mockup ilustrativo do quadro -->
-        <div class="mock" aria-hidden="true">
+        <div class="mock reveal d2" aria-hidden="true">
           <div class="mock-bar"><i></i><i></i><i></i></div>
           <div class="mock-board">
             <div class="mock-col">
               <h4>A preparar</h4>
               <div class="mock-card">
                 <div class="t">Maria Silva</div>
-                <div class="s">📍 Rua das Flores 12</div>
-                <span class="mock-tag tag-amber">€ Cobrar 8,50</span>
+                <div class="s"><svg class="icon"><use href="#i-pin"/></svg> Rua das Flores 12</div>
+                <span class="mock-tag tag-amber"><svg class="icon"><use href="#i-wallet"/></svg> Cobrar 8,50</span>
               </div>
               <div class="mock-card">
                 <div class="t">João Costa</div>
-                <div class="s">📍 Av. Central 4</div>
-                <span class="mock-tag tag-blue">❄️ Frio</span>
+                <div class="s"><svg class="icon"><use href="#i-pin"/></svg> Av. Central 4</div>
+                <span class="mock-tag tag-blue"><svg class="icon"><use href="#i-snow"/></svg> Frio</span>
               </div>
             </div>
             <div class="mock-col">
               <h4>Pronto p/ entrega</h4>
               <div class="mock-card">
                 <div class="t">Ana Pereira</div>
-                <div class="s">📍 Largo do Sol 9</div>
-                <span class="mock-tag tag-green">🧾 Faturado</span>
+                <div class="s"><svg class="icon"><use href="#i-pin"/></svg> Largo do Sol 9</div>
+                <span class="mock-tag tag-green"><svg class="icon"><use href="#i-receipt"/></svg> Faturado</span>
               </div>
             </div>
             <div class="mock-col">
               <h4>Com o estafeta</h4>
               <div class="mock-card">
                 <div class="t">Rui Tavares</div>
-                <div class="s">🛵 João · a caminho</div>
-                <span class="mock-tag tag-green">✓ Pago</span>
+                <div class="s"><svg class="icon"><use href="#i-bike"/></svg> João · a caminho</div>
+                <span class="mock-tag tag-green"><svg class="icon"><use href="#i-check"/></svg> Pago</span>
               </div>
             </div>
           </div>
@@ -89,10 +111,10 @@
     <!-- =============================== TRUST ============================== -->
     <div class="trust">
       <div class="wrap trust-inner">
-        <span>🖥️ Funciona no PC da farmácia</span>
-        <span>🛵 App no telemóvel do estafeta</span>
-        <span>🔒 Rasto de cada operação</span>
-        <span>📍 Localização em tempo real</span>
+        <span><svg class="icon"><use href="#i-monitor"/></svg> Funciona no PC da farmácia</span>
+        <span><svg class="icon"><use href="#i-smartphone"/></svg> App no telemóvel do estafeta</span>
+        <span><svg class="icon"><use href="#i-lock"/></svg> Rasto de cada operação</span>
+        <span><svg class="icon"><use href="#i-nav"/></svg> Localização em tempo real</span>
       </div>
     </div>
 
@@ -106,32 +128,32 @@
         </div>
         <div class="features">
           <div class="feature">
-            <div class="ico">📝</div>
+            <div class="ico"><svg class="icon"><use href="#i-clipboard"/></svg></div>
             <h3>Registo de pedidos</h3>
             <p>Cliente, morada, telefone, medicamentos, valor e marcadores de receita ou refrigerado — em segundos.</p>
           </div>
           <div class="feature">
-            <div class="ico">🧾</div>
+            <div class="ico"><svg class="icon"><use href="#i-receipt"/></svg></div>
             <h3>Faturação rastreada</h3>
             <p>Marca o que já foi faturado no Sifarma e fica registado <b>quem</b> faturou e quando.</p>
           </div>
           <div class="feature">
-            <div class="ico">🛵</div>
+            <div class="ico"><svg class="icon"><use href="#i-bike"/></svg></div>
             <h3>App do estafeta</h3>
             <p>No telemóvel, vê só os pedidos prontos, recolhe e segue para a morada com o mapa a um toque.</p>
           </div>
           <div class="feature">
-            <div class="ico">📍</div>
+            <div class="ico"><svg class="icon"><use href="#i-nav"/></svg></div>
             <h3>Localização em tempo real</h3>
             <p>A farmácia vê onde está o estafeta e quais as entregas já concluídas, sem ter de ligar.</p>
           </div>
           <div class="feature">
-            <div class="ico">💶</div>
+            <div class="ico"><svg class="icon"><use href="#i-wallet"/></svg></div>
             <h3>Pagamentos na entrega</h3>
             <p>Saber de relance o que está pago e o que há a cobrar, e confirmar o valor recebido na entrega.</p>
           </div>
           <div class="feature">
-            <div class="ico">🔎</div>
+            <div class="ico"><svg class="icon"><use href="#i-shield"/></svg></div>
             <h3>Controlo total</h3>
             <p>Histórico de cada pedido: quem recebeu, quem faturou, quem entregou e como (em mão, a vizinho…).</p>
           </div>
@@ -143,7 +165,7 @@
     <section id="como-funciona">
       <div class="wrap">
         <div class="workflow">
-          <div class="wrap" style="padding:56px 0;">
+          <div class="wrap" style="padding:58px 0;">
             <div class="section-head">
               <span class="kicker">Como funciona</span>
               <h2>Do pedido à porta do cliente, em 4 passos</h2>
@@ -181,7 +203,7 @@
         <div class="cta-box">
           <h2>Pronto para experimentar?</h2>
           <p>Abre a aplicação e testa o fluxo completo — sem instalar nada. Funciona já no teu browser.</p>
-          <a href="app.html" class="btn btn-primary">Abrir aplicação →</a>
+          <a href="app.html" class="btn btn-primary">Abrir aplicação <svg class="icon icon-sm"><use href="#i-arrow"/></svg></a>
         </div>
       </div>
     </section>
@@ -191,7 +213,7 @@
   <footer class="footer">
     <div class="wrap footer-inner">
       <div class="footer-brand">
-        <img src="assets/logo.jpg" alt="Gripharma" />
+        <img src="assets/logo.jpg" alt="Logótipo gripharma" />
         <span>Entregas ao Domicílio</span>
       </div>
       <div>Built with <span class="heart">❤️</span> in Portugal by <strong>BuildityLab</strong></div>
