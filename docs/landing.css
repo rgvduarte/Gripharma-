@@ -123,6 +123,60 @@ img { max-width: 100%; }
 .tag-amber { background: #fdf0d3; color: #8a5a06; }
 .tag-blue { background: #def0f7; color: #0b5e78; }
 
+/* ----------------------- Screenshots (moldura) ------------------------- */
+.browser { background: #fff; border: 1px solid var(--line); border-radius: 16px 16px 14px 14px; box-shadow: var(--shadow-lg); overflow: hidden; }
+.browser-bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #f4f7ef; border-bottom: 1px solid var(--line); }
+.browser-dots { display: flex; gap: 6px; }
+.browser-dots i { width: 11px; height: 11px; border-radius: 50%; background: #d6ddcb; }
+.browser-url { flex: 1; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 5px 12px; font-size: .76rem; color: var(--muted); display: flex; align-items: center; gap: 7px; }
+.browser-url .icon { width: 13px; height: 13px; color: var(--green-dark); }
+
+.shot-topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.shot-brand { display: flex; align-items: center; gap: 9px; font-weight: 800; color: var(--ink); font-size: .92rem; }
+.shot-brand img { height: 26px; }
+.shot-pills { display: flex; gap: 6px; }
+.shot-pill { font-size: .72rem; font-weight: 700; padding: 5px 12px; border-radius: 999px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; }
+.shot-pill .icon { width: 13px; height: 13px; }
+.shot-pill.on { background: var(--green); color: #fff; }
+
+.shot-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 14px; background: var(--green-tint); }
+.shot-col { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 9px; }
+.shot-col h5 { margin: 0 0 8px; font-size: .56rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-family: var(--font-head); display: flex; align-items: center; justify-content: space-between; }
+.shot-col h5 b { background: var(--green-soft); color: var(--green-darker); border-radius: 999px; padding: 0 6px; }
+.shot-card { background: #fff; border: 1px solid var(--line); border-radius: 9px; padding: 8px; margin-bottom: 8px; box-shadow: var(--shadow-sm); }
+.shot-card:last-child { margin-bottom: 0; }
+.shot-card .code { font-size: .58rem; font-weight: 700; color: var(--green-dark); }
+.shot-card .who { font-weight: 700; font-size: .72rem; margin: 2px 0; }
+.shot-card .ln { font-size: .62rem; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+.shot-card .ln .icon { width: 11px; height: 11px; }
+.shot-card .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+
+/* Telemóvel (estafeta) */
+.phone { width: 270px; background: #16210f; border-radius: 34px; padding: 10px; box-shadow: var(--shadow-lg); flex: none; }
+.phone-screen { background: var(--green-tint); border-radius: 26px; overflow: hidden; position: relative; }
+.phone-notch { height: 22px; display: flex; justify-content: center; }
+.phone-notch::after { content: ''; width: 96px; height: 16px; background: #16210f; border-radius: 0 0 12px 12px; }
+.phone-top { display: flex; align-items: center; gap: 8px; padding: 6px 14px 12px; background: #fff; border-bottom: 1px solid var(--line); }
+.phone-top img { height: 22px; }
+.phone-top .role { margin-left: auto; font-size: .66rem; font-weight: 700; background: var(--green); color: #fff; padding: 4px 10px; border-radius: 999px; }
+.phone-body { padding: 12px; }
+.phone-h { font-size: .66rem; font-weight: 700; color: var(--ink-2); margin: 0 0 8px; display: flex; align-items: center; gap: 6px; }
+.phone-h .icon { width: 14px; height: 14px; color: var(--green-dark); }
+.phone-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px; margin-bottom: 10px; box-shadow: var(--shadow-sm); }
+.phone-card .who { font-weight: 700; font-size: .78rem; }
+.phone-card .ln { font-size: .66rem; color: var(--muted); display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+.phone-card .ln .icon { width: 12px; height: 12px; }
+.phone-btn { margin-top: 9px; background: var(--green); color: #fff; border-radius: 8px; text-align: center; font-size: .7rem; font-weight: 700; padding: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.phone-btn .icon { width: 14px; height: 14px; }
+
+.shots-row { display: grid; grid-template-columns: 1.4fr .6fr; gap: 30px; align-items: center; }
+.shots-row .phone { justify-self: center; }
+
+@media (max-width: 880px) {
+  .shots-row { grid-template-columns: 1fr; gap: 28px; }
+  .shot-board { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* -------------------------------- Trust -------------------------------- */
 .trust { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--green-tint); }
 .trust-inner { display: flex; flex-wrap: wrap; gap: 16px 44px; justify-content: center; padding: 24px 0; color: var(--ink-2); font-weight: 600; font-size: .95rem; }
