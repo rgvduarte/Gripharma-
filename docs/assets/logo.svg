@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="Gripharma">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#16a34a"/>
+      <stop offset="1" stop-color="#0e7a4f"/>
+    </linearGradient>
+  </defs>
+  <rect x="6" y="6" width="108" height="108" rx="26" fill="url(#g)"/>
+  <!-- cruz de farmácia -->
+  <rect x="50" y="28" width="20" height="64" rx="5" fill="#fff"/>
+  <rect x="28" y="50" width="64" height="20" rx="5" fill="#fff"/>
+</svg>

@@ -1,0 +1,489 @@
+'use strict';
+/*
+ * Gripharma — Entregas ao Domicílio (frontend)
+ *
+ * Funciona em dois modos, detetados automaticamente:
+ *  - API:  servido pelo server.js → dados partilhados entre o PC da farmácia
+ *          e o telemóvel do estafeta (inclui localização do estafeta).
+ *  - DEMO: aberto sem servidor (ex.: GitHub Pages) → dados guardados só neste
+ *          browser (localStorage). Ideal para demonstração.
+ *
+ * Complementa o Sifarma (GLINTT): a faturação real é feita no Sifarma; aqui
+ * regista-se QUEM faturou, para haver rasto de responsabilidade.
+ */
+
+const STORAGE_KEY = 'gripharma_orders_v1';
+const PREFS_KEY = 'gripharma_prefs_v1';
+
+let MODE = 'demo'; // 'api' | 'demo'
+let prefs = loadPrefs();
+let orders = [];
+let geoWatchId = null;
+
+/* ------------------------------- Arranque ------------------------------ */
+
+async function init() {
+  await detectMode();
+  setupUI();
+  applyRole(prefs.role || 'farmacia');
+  await refresh();
+  if (MODE === 'api') setInterval(refresh, 5000); // mantém PC e telemóvel a par
+}
+
+async function detectMode() {
+  try {
+    const r = await fetch('api/health', { cache: 'no-store' });
+    if (r.ok) { MODE = 'api'; setBadge('Servidor ligado · dados partilhados', false); return; }
+  } catch (_) { /* sem servidor */ }
+  MODE = 'demo';
+  setBadge('Modo demonstração (dados só neste browser)', true);
+}
+
+function setBadge(text, isDemo) {
+  const el = document.getElementById('modeBadge');
+  el.textContent = text;
+  el.classList.toggle('demo', !!isDemo);
+}
+
+/* --------------------------- Camada de dados --------------------------- */
+
+const store = {
+  async list() {
+    if (MODE === 'api') return (await getJSON('api/orders')).orders || [];
+    return demoLoad();
+  },
+  async couriers() {
+    if (MODE === 'api') return (await getJSON('api/couriers')).couriers || [];
+    return [];
+  },
+  async shareLocation(name, lat, lng) {
+    if (MODE !== 'api') return;
+    await postJSON('api/couriers/location', 'POST', { name, lat, lng });
+  },
+  async create(data, operator) {
+    if (MODE === 'api') return postJSON('api/orders', 'POST', { ...data, operator });
+    const all = demoLoad();
+    const ts = new Date().toISOString();
+    const counter = Number(localStorage.getItem('gripharma_counter') || all.length) + 1;
+    localStorage.setItem('gripharma_counter', String(counter));
+    const order = {
+      id: uuid(), code: '#' + String(counter).padStart(4, '0'), ...data,
+      status: 'pendente', registeredBy: operator,
+      invoiced: false, invoicedBy: '', invoicedAt: '', readyBy: '', readyAt: '',
+      courier: '', pickedAt: '', deliveredBy: '', deliveredAt: '', receivedBy: '', deliveryOutcome: '',
+      createdAt: ts, updatedAt: ts,
+      history: [{ status: 'pendente', at: ts, by: operator, note: 'Pedido registado' }],
+    };
+    all.push(order); demoSave(all); return order;
+  },
+  async update(id, data) {
+    if (MODE === 'api') return postJSON('api/orders/' + id, 'PUT', data);
+    const all = demoLoad(); const o = all.find((x) => x.id === id);
+    if (o) { Object.assign(o, data, { updatedAt: new Date().toISOString() }); demoSave(all); }
+    return o;
+  },
+  async invoice(id, operator) {
+    if (MODE === 'api') return postJSON('api/orders/' + id + '/invoice', 'POST', { operator });
+    const all = demoLoad(); const o = all.find((x) => x.id === id);
+    if (o) {
+      const ts = new Date().toISOString();
+      o.invoiced = true; o.invoicedBy = operator; o.invoicedAt = ts; o.updatedAt = ts;
+      o.history.push({ status: o.status, at: ts, by: operator, note: 'Faturado (Sifarma)' });
+      demoSave(all);
+    }
+    return o;
+  },
+  async setStatus(id, status, extra = {}) {
+    if (MODE === 'api') return postJSON('api/orders/' + id + '/status', 'POST', { status, ...extra });
+    const all = demoLoad(); const o = all.find((x) => x.id === id);
+    if (o) {
+      const ts = new Date().toISOString();
+      o.status = status; o.updatedAt = ts;
+      if (status === 'pronto') { o.readyBy = extra.operator || ''; o.readyAt = ts; }
+      if (status === 'recolhido') { o.courier = extra.courier || extra.operator || ''; o.pickedAt = ts; }
+      if (status === 'entregue') {
+        o.deliveredBy = extra.courier || extra.operator || o.courier;
+        o.deliveredAt = ts; o.receivedBy = extra.receivedBy || ''; o.deliveryOutcome = extra.deliveryOutcome || '';
+        if (extra.paymentCollected) o.paymentStatus = 'pago';
+      }
+      o.history.push({ status, at: ts, by: extra.operator || o.courier || '', note: extra.note || '' });
+      demoSave(all);
+    }
+    return o;
+  },
+  async remove(id) {
+    if (MODE === 'api') { await fetch('api/orders/' + id, { method: 'DELETE' }); return; }
+    demoSave(demoLoad().filter((x) => x.id !== id));
+  },
+};
+
+async function getJSON(url) {
+  const r = await fetch(url, { cache: 'no-store' });
+  return r.json();
+}
+async function postJSON(url, method, body) {
+  const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || 'Erro');
+  return d.order;
+}
+function demoLoad() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch (_) { return []; } }
+function demoSave(a) { localStorage.setItem(STORAGE_KEY, JSON.stringify(a)); }
+function loadPrefs() { try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch (_) { return {}; } }
+function savePrefs() { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); }
+function uuid() {
+  return crypto.randomUUID ? crypto.randomUUID()
+    : 'xxxxxxxx-xxxx-4xxx-yxxx'.replace(/[xy]/g, (c) => {
+      const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+}
+
+/* --------------------------- Identidade / papel ------------------------ */
+
+function operatorName() { return (document.getElementById('operatorName').value || '').trim(); }
+function courierName() { return (document.getElementById('courierName').value || '').trim(); }
+
+function requireOperator() {
+  const n = operatorName();
+  if (!n) { toast('Indica o teu nome (Operador) no canto superior.'); document.getElementById('operatorName').focus(); }
+  return n;
+}
+function requireCourier() {
+  const n = courierName();
+  if (!n) { toast('Indica o teu nome (Estafeta) no topo.'); document.getElementById('courierName').focus(); }
+  return n;
+}
+
+/* ------------------------------- Render -------------------------------- */
+
+async function refresh() {
+  orders = await store.list();
+  if (prefs.role === 'estafeta') renderEstafeta();
+  else { renderFarmacia(); renderCouriers(); }
+}
+
+function matchesSearch(o, q) {
+  if (!q) return true;
+  return [o.code, o.customerName, o.customerPhone, o.customerAddress, o.items, o.notes]
+    .join(' ').toLowerCase().includes(q);
+}
+function isToday(iso) {
+  const d = new Date(iso); const n = new Date();
+  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+}
+
+function renderFarmacia() {
+  const q = (document.getElementById('search').value || '').trim().toLowerCase();
+  const buckets = { pendente: [], pronto: [], recolhido: [], entregue: [] };
+  for (const o of orders) {
+    if (o.status === 'cancelado') continue;
+    if (o.status === 'entregue' && !isToday(o.updatedAt)) continue;
+    if (!matchesSearch(o, q)) continue;
+    if (buckets[o.status]) buckets[o.status].push(o);
+  }
+  for (const status of Object.keys(buckets)) {
+    document.querySelector(`[data-count="${status}"]`).textContent = buckets[status].length;
+    const wrap = document.querySelector(`[data-cards="${status}"]`);
+    wrap.innerHTML = buckets[status].length ? buckets[status].map(cardFarmacia).join('') : '<div class="empty">—</div>';
+  }
+  const active = orders.filter((o) => ['pendente', 'pronto', 'recolhido'].includes(o.status)).length;
+  const today = orders.filter((o) => o.status === 'entregue' && isToday(o.updatedAt)).length;
+  const cobrar = orders.filter((o) => o.paymentStatus === 'cobrar' && ['pronto', 'recolhido'].includes(o.status))
+    .reduce((s, o) => s + (Number(o.paymentAmount) || 0), 0);
+  document.getElementById('stats').innerHTML =
+    `<span>Ativos: <b>${active}</b></span><span>Entregues hoje: <b>${today}</b></span>` +
+    `<span>A cobrar (em rota): <b>${cobrar.toFixed(2)}€</b></span>`;
+}
+
+async function renderCouriers() {
+  const panel = document.getElementById('couriersPanel');
+  if (MODE !== 'api') { panel.hidden = true; return; }
+  const list = (await store.couriers()).filter((c) => Date.now() - new Date(c.at).getTime() < 15 * 60 * 1000);
+  if (!list.length) { panel.hidden = true; return; }
+  panel.hidden = false;
+  panel.innerHTML = '<strong style="font-size:.8rem;color:var(--muted)">Estafetas em rota:</strong>' +
+    list.map((c) =>
+      `<span class="courier-chip">🛵 ${esc(c.name)} · ${ago(c.at)}` +
+      ` · <a href="https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}" target="_blank" rel="noopener">🗺️ ver no mapa</a></span>`
+    ).join('');
+}
+
+function badges(o) {
+  const b = [];
+  const amt = Number(o.paymentAmount) || 0;
+  if (o.paymentStatus === 'pago') b.push(`<span class="badge pay-pago">✓ Pago${amt ? ' ' + amt.toFixed(2) + '€' : ''}</span>`);
+  else b.push(`<span class="badge pay-cobrar">€ Cobrar${amt ? ' ' + amt.toFixed(2) + '€' : ''}</span>`);
+  if (o.requiresPrescription) b.push('<span class="badge rx">📄 Receita</span>');
+  if (o.refrigerated) b.push('<span class="badge cold">❄️ Frio</span>');
+  if (o.callOnArrival) b.push('<span class="badge call">📞 Ligar ao chegar</span>');
+  if (o.invoiced) b.push('<span class="badge pay-pago">🧾 Faturado</span>');
+  return b.join('');
+}
+
+function stampsLine(o) {
+  const s = [];
+  if (o.registeredBy) s.push(`Recebido: ${esc(o.registeredBy)}`);
+  if (o.invoicedBy) s.push(`Faturado: ${esc(o.invoicedBy)}`);
+  if (o.courier) s.push(`Estafeta: ${esc(o.courier)}`);
+  if (o.deliveryOutcome) s.push(`Entrega: ${esc(o.deliveryOutcome)}`);
+  if (o.receivedBy) s.push(`Recebeu: ${esc(o.receivedBy)}`);
+  return s.length ? `<div class="history-mini">${s.map((x) => `<div>• ${x}</div>`).join('')}</div>` : '';
+}
+
+function cardCommon(o) {
+  return (
+    `<div class="card-top"><span class="card-code">${esc(o.code)}</span><span class="card-time">${fmtTime(o.createdAt)}</span></div>` +
+    `<div class="card-name">${esc(o.customerName)}</div>` +
+    `<div class="card-line"><span class="ico">📍</span>${esc(o.customerAddress)}</div>` +
+    (o.customerPhone ? `<div class="card-line"><span class="ico">📞</span><a href="tel:${esc(o.customerPhone)}">${esc(o.customerPhone)}</a></div>` : '') +
+    (o.items ? `<div class="card-items">💊 ${esc(o.items)}</div>` : '') +
+    (o.notes ? `<div class="card-line"><span class="ico">📝</span>${esc(o.notes)}</div>` : '') +
+    `<div class="badges">${badges(o)}</div>`
+  );
+}
+
+function cardFarmacia(o) {
+  let actions = '';
+  if (o.status === 'pendente') {
+    actions =
+      (o.invoiced ? '' : `<button class="btn btn-sm" data-act="invoice" data-id="${o.id}">🧾 Faturar</button>`) +
+      `<button class="btn btn-sm btn-primary" data-act="status" data-id="${o.id}" data-status="pronto">Marcar pronto</button>` +
+      `<button class="btn btn-sm" data-act="edit" data-id="${o.id}">Editar</button>` +
+      `<button class="btn btn-sm btn-danger" data-act="cancel" data-id="${o.id}">✕</button>`;
+  } else if (o.status === 'pronto') {
+    actions =
+      (o.invoiced ? '' : `<button class="btn btn-sm" data-act="invoice" data-id="${o.id}">🧾 Faturar</button>`) +
+      `<button class="btn btn-sm" data-act="status" data-id="${o.id}" data-status="pendente">↩ Voltar</button>` +
+      `<button class="btn btn-sm" data-act="edit" data-id="${o.id}">Editar</button>`;
+  } else if (o.status === 'recolhido') {
+    actions = `<button class="btn btn-sm btn-ok" data-act="deliver" data-id="${o.id}">Confirmar entrega</button>`;
+  }
+  return `<div class="card">${cardCommon(o)}${stampsLine(o)}<div class="card-actions">${actions}</div></div>`;
+}
+
+function renderEstafeta() {
+  const recolher = orders.filter((o) => o.status === 'pronto');
+  const entrega = orders.filter((o) => o.status === 'recolhido');
+  document.getElementById('cntRecolher').textContent = recolher.length;
+  document.getElementById('cntEntrega').textContent = entrega.length;
+  document.getElementById('listRecolher').innerHTML = recolher.length
+    ? recolher.map(cardRecolher).join('') : '<div class="empty">Nada para recolher de momento.</div>';
+  document.getElementById('listEntrega').innerHTML = entrega.length
+    ? entrega.map(cardEntrega).join('') : '<div class="empty">Sem entregas em curso.</div>';
+}
+
+function cardRecolher(o) {
+  return `<div class="card">${cardCommon(o)}<div class="card-actions">` +
+    `<button class="btn btn-primary btn-block" data-act="recolher" data-id="${o.id}">🛵 Recolhi este pedido</button></div></div>`;
+}
+function cardEntrega(o) {
+  return `<div class="card">${cardCommon(o)}${stampsLine(o)}<div class="card-actions">` +
+    `<a class="btn btn-sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.customerAddress)}" target="_blank" rel="noopener">🗺️ Mapa</a>` +
+    `<button class="btn btn-ok" data-act="deliver" data-id="${o.id}">✅ Confirmar entrega</button></div></div>`;
+}
+
+/* ------------------------------- Eventos ------------------------------- */
+
+function setupUI() {
+  document.getElementById('roleSwitch').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-role]');
+    if (btn) { applyRole(btn.dataset.role); refresh(); }
+  });
+  document.getElementById('search').addEventListener('input', renderFarmacia);
+  document.getElementById('btnNew').addEventListener('click', () => { if (requireOperator()) openModal(); });
+
+  const op = document.getElementById('operatorName');
+  op.value = prefs.operatorName || '';
+  op.addEventListener('input', () => { prefs.operatorName = op.value; savePrefs(); });
+
+  const cn = document.getElementById('courierName');
+  cn.value = prefs.courierName || '';
+  cn.addEventListener('input', () => { prefs.courierName = cn.value; savePrefs(); });
+
+  document.getElementById('shareLocation').addEventListener('change', onToggleLocation);
+
+  document.querySelector('main').addEventListener('click', onCardClick);
+
+  const modal = document.getElementById('modal');
+  modal.addEventListener('click', (e) => { if (e.target === modal || e.target.hasAttribute('data-close')) closeModal(); });
+  document.getElementById('orderForm').addEventListener('submit', onSubmitForm);
+
+  const dm = document.getElementById('deliverModal');
+  dm.addEventListener('click', (e) => { if (e.target === dm || e.target.hasAttribute('data-close-deliver')) dm.hidden = true; });
+  document.getElementById('deliverForm').addEventListener('submit', onSubmitDeliver);
+}
+
+function applyRole(role) {
+  prefs.role = role; savePrefs();
+  document.querySelectorAll('.role-btn').forEach((b) => b.classList.toggle('active', b.dataset.role === role));
+  document.getElementById('view-farmacia').hidden = role !== 'farmacia';
+  document.getElementById('view-estafeta').hidden = role !== 'estafeta';
+  document.getElementById('whoFarmacia').hidden = role !== 'farmacia';
+  document.getElementById('whoEstafeta').hidden = role !== 'estafeta';
+}
+
+async function onCardClick(e) {
+  const btn = e.target.closest('[data-act]');
+  if (!btn) return;
+  const { act, id } = btn.dataset;
+  const order = orders.find((o) => o.id === id);
+  try {
+    if (act === 'status') {
+      const operator = requireOperator(); if (!operator) return;
+      await store.setStatus(id, btn.dataset.status, { operator });
+    } else if (act === 'invoice') {
+      const operator = requireOperator(); if (!operator) return;
+      await store.invoice(id, operator);
+      toast('Marcado como faturado 🧾');
+    } else if (act === 'edit') {
+      return openModal(order);
+    } else if (act === 'cancel') {
+      const operator = requireOperator(); if (!operator) return;
+      if (!confirm('Cancelar/remover este pedido?')) return;
+      await store.setStatus(id, 'cancelado', { operator });
+    } else if (act === 'recolher') {
+      const courier = requireCourier(); if (!courier) return;
+      await store.setStatus(id, 'recolhido', { courier, operator: courier, note: 'Recolhido pelo estafeta' });
+      toast('Pedido recolhido. Boa viagem! 🛵');
+    } else if (act === 'deliver') {
+      return openDeliver(order);
+    }
+    await refresh();
+  } catch (err) { toast('Erro: ' + err.message); }
+}
+
+/* --------------------------- Localização (GPS) ------------------------- */
+
+function onToggleLocation(e) {
+  const status = document.getElementById('locStatus');
+  if (e.target.checked) {
+    const name = requireCourier();
+    if (!name) { e.target.checked = false; return; }
+    if (MODE !== 'api') { status.textContent = '(precisa do servidor para partilhar entre dispositivos)'; }
+    if (!navigator.geolocation) { status.textContent = 'GPS não disponível neste dispositivo.'; e.target.checked = false; return; }
+    status.textContent = 'A obter localização…';
+    let last = 0;
+    geoWatchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const t = Date.now();
+        if (t - last < 15000) return; // no máx. a cada 15s
+        last = t;
+        store.shareLocation(courierName(), pos.coords.latitude, pos.coords.longitude)
+          .then(() => { status.textContent = 'Localização partilhada · ' + fmtTime(new Date().toISOString()); })
+          .catch(() => {});
+      },
+      () => { status.textContent = 'Sem permissão de localização.'; },
+      { enableHighAccuracy: true, maximumAge: 10000 }
+    );
+  } else {
+    if (geoWatchId != null) { navigator.geolocation.clearWatch(geoWatchId); geoWatchId = null; }
+    status.textContent = 'Partilha desligada.';
+  }
+}
+
+/* ------------------------------ Modais --------------------------------- */
+
+function openModal(order) {
+  const form = document.getElementById('orderForm');
+  form.reset();
+  document.getElementById('modalTitle').textContent = order ? 'Editar pedido ' + order.code : 'Novo pedido';
+  form.id.value = order ? order.id : '';
+  if (order) {
+    form.customerName.value = order.customerName || '';
+    form.customerPhone.value = order.customerPhone || '';
+    form.customerAddress.value = order.customerAddress || '';
+    form.items.value = order.items || '';
+    form.paymentAmount.value = order.paymentAmount || '';
+    form.paymentStatus.value = order.paymentStatus || 'cobrar';
+    form.requiresPrescription.checked = !!order.requiresPrescription;
+    form.refrigerated.checked = !!order.refrigerated;
+    form.callOnArrival.checked = !!order.callOnArrival;
+    form.notes.value = order.notes || '';
+  }
+  document.getElementById('modal').hidden = false;
+  setTimeout(() => form.customerName.focus(), 50);
+}
+function closeModal() { document.getElementById('modal').hidden = true; }
+
+async function onSubmitForm(e) {
+  e.preventDefault();
+  const form = e.target;
+  const data = {
+    customerName: form.customerName.value.trim(),
+    customerPhone: form.customerPhone.value.trim(),
+    customerAddress: form.customerAddress.value.trim(),
+    items: form.items.value.trim(),
+    paymentAmount: Number(form.paymentAmount.value) || 0,
+    paymentStatus: form.paymentStatus.value,
+    requiresPrescription: form.requiresPrescription.checked,
+    refrigerated: form.refrigerated.checked,
+    callOnArrival: form.callOnArrival.checked,
+    notes: form.notes.value.trim(),
+  };
+  if (!data.customerName || !data.customerAddress) return toast('Nome e morada são obrigatórios.');
+  try {
+    if (form.id.value) await store.update(form.id.value, data);
+    else { const operator = requireOperator(); if (!operator) return; await store.create(data, operator); }
+    closeModal(); await refresh();
+    toast(form.id.value ? 'Pedido atualizado.' : 'Pedido registado ✓');
+  } catch (err) { toast('Erro: ' + err.message); }
+}
+
+function openDeliver(order) {
+  const form = document.getElementById('deliverForm');
+  form.reset();
+  form.id.value = order.id;
+  document.getElementById('deliverCode').textContent = order.code;
+  const payRow = document.getElementById('payRow');
+  const amt = Number(order.paymentAmount) || 0;
+  if (order.paymentStatus === 'cobrar' && amt > 0) {
+    payRow.hidden = false; document.getElementById('payAmount').textContent = amt.toFixed(2) + '€';
+  } else { payRow.hidden = true; }
+  document.getElementById('deliverModal').hidden = false;
+}
+
+async function onSubmitDeliver(e) {
+  e.preventDefault();
+  const form = e.target;
+  const id = form.id.value;
+  const actor = prefs.role === 'estafeta' ? requireCourier() : requireOperator();
+  if (!actor) return;
+  try {
+    await store.setStatus(id, 'entregue', {
+      operator: actor, courier: prefs.role === 'estafeta' ? actor : undefined,
+      receivedBy: form.receivedBy.value.trim(),
+      deliveryOutcome: form.deliveryOutcome.value,
+      paymentCollected: form.paymentCollected.checked,
+      note: form.note.value.trim(),
+    });
+    document.getElementById('deliverModal').hidden = true;
+    await refresh();
+    toast('Entrega confirmada! ✅');
+  } catch (err) { toast('Erro: ' + err.message); }
+}
+
+/* ------------------------------- Utils --------------------------------- */
+
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function fmtTime(iso) {
+  try { return new Date(iso).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }); } catch (_) { return ''; }
+}
+function ago(iso) {
+  const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (m <= 0) return 'agora';
+  if (m === 1) return 'há 1 min';
+  return 'há ' + m + ' min';
+}
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, 2800);
+}
+
+init();

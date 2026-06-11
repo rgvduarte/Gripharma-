@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gripharma — Entregas ao Domicílio</title>
+  <meta name="description" content="Gestão interna de entregas ao domicílio da farmácia." />
+  <meta name="theme-color" content="#7bbf2e" />
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="assets/logo.jpg" alt="Gripharma" class="brand-logo" />
+      <div class="brand-text">
+        <strong>Entregas ao Domicílio</strong>
+        <span id="modeBadge" class="mode-badge" title="Modo de funcionamento"></span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <label class="who" id="whoFarmacia">👤 Operador:
+        <input id="operatorName" class="input-inline" type="text" placeholder="O teu nome" autocomplete="off" />
+      </label>
+      <label class="who" id="whoEstafeta" hidden>🛵 Estafeta:
+        <input id="courierName" class="input-inline" type="text" placeholder="O teu nome" autocomplete="off" />
+      </label>
+      <nav class="roles" id="roleSwitch">
+        <button class="role-btn" data-role="farmacia">🏥 Farmácia</button>
+        <button class="role-btn" data-role="estafeta">🛵 Estafeta</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- ====================== VISTA FARMÁCIA ====================== -->
+    <section id="view-farmacia" class="view">
+      <div id="couriersPanel" class="couriers-panel" hidden></div>
+
+      <div class="toolbar">
+        <div class="stats" id="stats"></div>
+        <div class="toolbar-actions">
+          <input id="search" class="search" type="search" placeholder="Procurar cliente, morada, código…" />
+          <button id="btnNew" class="btn btn-primary">+ Novo pedido</button>
+        </div>
+      </div>
+
+      <div class="board" id="board">
+        <div class="column" data-status="pendente">
+          <h2>A preparar <span class="count" data-count="pendente">0</span></h2>
+          <div class="cards" data-cards="pendente"></div>
+        </div>
+        <div class="column" data-status="pronto">
+          <h2>Prontos p/ entrega <span class="count" data-count="pronto">0</span></h2>
+          <div class="cards" data-cards="pronto"></div>
+        </div>
+        <div class="column" data-status="recolhido">
+          <h2>Com o estafeta <span class="count" data-count="recolhido">0</span></h2>
+          <div class="cards" data-cards="recolhido"></div>
+        </div>
+        <div class="column" data-status="entregue">
+          <h2>Entregues (hoje) <span class="count" data-count="entregue">0</span></h2>
+          <div class="cards" data-cards="entregue"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================== VISTA ESTAFETA ====================== -->
+    <section id="view-estafeta" class="view" hidden>
+      <div class="courier-bar">
+        <label class="loc-toggle">
+          <input type="checkbox" id="shareLocation" /> 📍 Partilhar a minha localização com a farmácia
+        </label>
+        <span id="locStatus" class="loc-status"></span>
+      </div>
+
+      <h2 class="section-title">📦 Para recolher na farmácia <span class="count" id="cntRecolher">0</span></h2>
+      <div class="cards courier-list" id="listRecolher"></div>
+
+      <h2 class="section-title">🛵 Em entrega <span class="count" id="cntEntrega">0</span></h2>
+      <div class="cards courier-list" id="listEntrega"></div>
+    </section>
+  </main>
+
+  <!-- ====================== MODAL: NOVO/EDITAR PEDIDO ====================== -->
+  <div id="modal" class="modal" hidden>
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3 id="modalTitle">Novo pedido</h3>
+        <button class="icon-btn" data-close>✕</button>
+      </div>
+      <form id="orderForm" class="form">
+        <input type="hidden" name="id" />
+        <div class="grid2">
+          <label>Nome do cliente *
+            <input name="customerName" type="text" required autocomplete="off" />
+          </label>
+          <label>Telefone
+            <input name="customerPhone" type="tel" inputmode="tel" autocomplete="off" />
+          </label>
+        </div>
+        <label>Morada de entrega *
+          <input name="customerAddress" type="text" required autocomplete="off" />
+        </label>
+        <label>Medicamentos / itens
+          <textarea name="items" rows="3" placeholder="Ex.: Ben-u-ron 1g x2; Brufen 400 x1…"></textarea>
+        </label>
+        <div class="grid2">
+          <label>Valor (€)
+            <input name="paymentAmount" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00" />
+          </label>
+          <label>Pagamento
+            <select name="paymentStatus">
+              <option value="cobrar">A cobrar na entrega</option>
+              <option value="pago">Já pago</option>
+            </select>
+          </label>
+        </div>
+        <div class="checks">
+          <label class="check"><input type="checkbox" name="requiresPrescription" /> 📄 Precisa de receita médica</label>
+          <label class="check"><input type="checkbox" name="refrigerated" /> ❄️ Refrigerado (frio)</label>
+          <label class="check"><input type="checkbox" name="callOnArrival" /> 📞 Ligar ao chegar (cliente desce)</label>
+        </div>
+        <label>Instruções para a entrega
+          <input name="notes" type="text" placeholder="Ex.: 3º andar sem elevador; entregar só ao próprio…" autocomplete="off" />
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn" data-close>Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar pedido</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================== MODAL: CONFIRMAR ENTREGA ====================== -->
+  <div id="deliverModal" class="modal" hidden>
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>Confirmar entrega <span id="deliverCode" class="card-code"></span></h3>
+        <button class="icon-btn" data-close-deliver>✕</button>
+      </div>
+      <form id="deliverForm" class="form">
+        <input type="hidden" name="id" />
+        <label>Como foi entregue?
+          <select name="deliveryOutcome">
+            <option value="Em mão ao cliente">Em mão ao cliente</option>
+            <option value="Entregue a familiar/vizinho">Entregue a familiar/vizinho</option>
+            <option value="Deixado no correio/caixa">Deixado no correio/caixa</option>
+            <option value="Outro">Outro</option>
+          </select>
+        </label>
+        <label>Quem recebeu (opcional)
+          <input name="receivedBy" type="text" autocomplete="off" placeholder="Nome de quem recebeu" />
+        </label>
+        <div id="payRow" class="pay-row" hidden>
+          <label class="check"><input type="checkbox" name="paymentCollected" /> 💶 Recebi o pagamento de <b id="payAmount"></b></label>
+        </div>
+        <label>Nota da entrega (opcional)
+          <input name="note" type="text" autocomplete="off" placeholder="Ex.: cliente não estava, deixei com vizinha do 2º" />
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn" data-close-deliver>Cancelar</button>
+          <button type="submit" class="btn btn-ok">✅ Confirmar entrega</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <footer class="site-footer">
+    Built with <span class="heart">❤️</span> in Portugal by <strong>BuildityLab</strong>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
