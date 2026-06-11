@@ -40,7 +40,7 @@ body {
   z-index: 20;
   flex-wrap: wrap;
 }
-.brand { display: flex; align-items: center; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
 .brand-logo { height: 42px; width: auto; border-radius: 8px; }
 .brand-text { display: flex; flex-direction: column; line-height: 1.2; }
 .brand-text strong { font-size: 1.05rem; color: var(--ink); }
