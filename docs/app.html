@@ -114,7 +114,7 @@
         <button class="icon-btn" data-close>✕</button>
       </div>
       <form id="orderForm" class="form">
-        <input type="hidden" name="id" />
+        <input type="hidden" name="orderId" />
         <div class="grid2">
           <label>Nome do cliente *
             <input name="customerName" type="text" required autocomplete="off" />
@@ -164,7 +164,7 @@
         <button class="icon-btn" data-close-deliver>✕</button>
       </div>
       <form id="deliverForm" class="form">
-        <input type="hidden" name="id" />
+        <input type="hidden" name="orderId" />
         <label>Como foi entregue?
           <select name="deliveryOutcome">
             <option value="Em mão ao cliente">Em mão ao cliente</option>
@@ -225,7 +225,7 @@
           <summary>Criar novo operador</summary>
           <form id="createOpForm">
             <label>Nome
-              <input name="name" type="text" autocomplete="off" placeholder="Ex.: Ana" />
+              <input name="opName" type="text" autocomplete="off" placeholder="Ex.: Ana" />
             </label>
             <label>PIN (4 a 6 dígitos)
               <input name="pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="••••" />

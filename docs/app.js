@@ -380,7 +380,7 @@ function setupUI() {
 
 async function onSubmitLogin(e) {
   e.preventDefault();
-  const pin = e.target.pin.value.trim();
+  const pin = e.target.elements.namedItem('pin').value.trim();
   if (!pin) return;
   try {
     const op = await store.login(pin);
@@ -390,8 +390,8 @@ async function onSubmitLogin(e) {
 }
 async function onSubmitCreateOp(e) {
   e.preventDefault();
-  const name = e.target.name.value.trim();
-  const pin = e.target.pin.value.trim();
+  const name = e.target.elements.namedItem('opName').value.trim();
+  const pin = e.target.elements.namedItem('pin').value.trim();
   if (!name || !pin) return toast('Indica nome e PIN.');
   try {
     const op = await store.createOperator(name, pin);
@@ -486,21 +486,21 @@ function openModal(order) {
   const form = document.getElementById('orderForm');
   form.reset();
   document.getElementById('modalTitle').textContent = order ? 'Editar pedido ' + order.code : 'Novo pedido';
-  form.id.value = order ? order.id : '';
+  form.elements.namedItem('orderId').value = order ? order.id : '';
   if (order) {
-    form.customerName.value = order.customerName || '';
-    form.customerPhone.value = order.customerPhone || '';
-    form.customerAddress.value = order.customerAddress || '';
-    form.items.value = order.items || '';
-    form.paymentAmount.value = order.paymentAmount || '';
-    form.paymentStatus.value = order.paymentStatus || 'cobrar';
-    form.requiresPrescription.checked = !!order.requiresPrescription;
-    form.refrigerated.checked = !!order.refrigerated;
-    form.callOnArrival.checked = !!order.callOnArrival;
-    form.notes.value = order.notes || '';
+    form.elements.namedItem('customerName').value = order.customerName || '';
+    form.elements.namedItem('customerPhone').value = order.customerPhone || '';
+    form.elements.namedItem('customerAddress').value = order.customerAddress || '';
+    form.elements.namedItem('items').value = order.items || '';
+    form.elements.namedItem('paymentAmount').value = order.paymentAmount || '';
+    form.elements.namedItem('paymentStatus').value = order.paymentStatus || 'cobrar';
+    form.elements.namedItem('requiresPrescription').checked = !!order.requiresPrescription;
+    form.elements.namedItem('refrigerated').checked = !!order.refrigerated;
+    form.elements.namedItem('callOnArrival').checked = !!order.callOnArrival;
+    form.elements.namedItem('notes').value = order.notes || '';
   }
   document.getElementById('modal').hidden = false;
-  setTimeout(() => form.customerName.focus(), 50);
+  setTimeout(() => form.elements.namedItem('customerName').focus(), 50);
 }
 function closeModal() { document.getElementById('modal').hidden = true; }
 
@@ -508,30 +508,30 @@ async function onSubmitForm(e) {
   e.preventDefault();
   const form = e.target;
   const data = {
-    customerName: form.customerName.value.trim(),
-    customerPhone: form.customerPhone.value.trim(),
-    customerAddress: form.customerAddress.value.trim(),
-    items: form.items.value.trim(),
-    paymentAmount: Number(form.paymentAmount.value) || 0,
-    paymentStatus: form.paymentStatus.value,
-    requiresPrescription: form.requiresPrescription.checked,
-    refrigerated: form.refrigerated.checked,
-    callOnArrival: form.callOnArrival.checked,
-    notes: form.notes.value.trim(),
+    customerName: form.elements.namedItem('customerName').value.trim(),
+    customerPhone: form.elements.namedItem('customerPhone').value.trim(),
+    customerAddress: form.elements.namedItem('customerAddress').value.trim(),
+    items: form.elements.namedItem('items').value.trim(),
+    paymentAmount: Number(form.elements.namedItem('paymentAmount').value) || 0,
+    paymentStatus: form.elements.namedItem('paymentStatus').value,
+    requiresPrescription: form.elements.namedItem('requiresPrescription').checked,
+    refrigerated: form.elements.namedItem('refrigerated').checked,
+    callOnArrival: form.elements.namedItem('callOnArrival').checked,
+    notes: form.elements.namedItem('notes').value.trim(),
   };
   if (!data.customerName || !data.customerAddress) return toast('Nome e morada são obrigatórios.');
   try {
-    if (form.id.value) await store.update(form.id.value, data);
+    if (form.elements.namedItem('orderId').value) await store.update(form.elements.namedItem('orderId').value, data);
     else { const operator = requireOperator(); if (!operator) return; await store.create(data, operator); }
     closeModal(); await refresh();
-    toast(form.id.value ? 'Pedido atualizado.' : 'Pedido registado ✓');
+    toast(form.elements.namedItem('orderId').value ? 'Pedido atualizado.' : 'Pedido registado ✓');
   } catch (err) { toast('Erro: ' + err.message); }
 }
 
 function openDeliver(order) {
   const form = document.getElementById('deliverForm');
   form.reset();
-  form.id.value = order.id;
+  form.elements.namedItem('orderId').value = order.id;
   document.getElementById('deliverCode').textContent = order.code;
   const payRow = document.getElementById('payRow');
   const amt = Number(order.paymentAmount) || 0;
@@ -544,16 +544,16 @@ function openDeliver(order) {
 async function onSubmitDeliver(e) {
   e.preventDefault();
   const form = e.target;
-  const id = form.id.value;
+  const id = form.elements.namedItem('orderId').value;
   const actor = prefs.role === 'estafeta' ? requireCourier() : requireOperator();
   if (!actor) return;
   try {
     await store.setStatus(id, 'entregue', {
       operator: actor, courier: prefs.role === 'estafeta' ? actor : undefined,
-      receivedBy: form.receivedBy.value.trim(),
-      deliveryOutcome: form.deliveryOutcome.value,
-      paymentCollected: form.paymentCollected.checked,
-      note: form.note.value.trim(),
+      receivedBy: form.elements.namedItem('receivedBy').value.trim(),
+      deliveryOutcome: form.elements.namedItem('deliveryOutcome').value,
+      paymentCollected: form.elements.namedItem('paymentCollected').checked,
+      note: form.elements.namedItem('note').value.trim(),
     });
     document.getElementById('deliverModal').hidden = true;
     await refresh();
