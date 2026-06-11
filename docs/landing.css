@@ -42,6 +42,8 @@ body {
   line-height: 1.6;
 }
 h1, h2, h3, .nav-brand span { font-family: var(--font-head); letter-spacing: -.02em; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
 a { color: inherit; }
 img { max-width: 100%; }
 .wrap { max-width: 1140px; margin: 0 auto; padding: 0 24px; }
@@ -91,16 +93,16 @@ img { max-width: 100%; }
     radial-gradient(1100px 480px at 88% -12%, rgba(123, 191, 46, .18), transparent 60%),
     radial-gradient(820px 420px at -5% 0%, rgba(123, 191, 46, .12), transparent 55%);
 }
-.hero-inner { display: grid; grid-template-columns: 1.05fr .95fr; gap: 52px; align-items: center; padding: 84px 0 70px; }
+.hero-inner { display: grid; grid-template-columns: 1.05fr .95fr; gap: 52px; align-items: center; padding: 92px 0 78px; }
 .eyebrow {
   display: inline-flex; align-items: center; gap: 8px;
   background: var(--green-soft); color: var(--green-darker);
   font-weight: 700; font-size: .82rem; padding: 7px 15px; border-radius: 999px; margin-bottom: 22px;
 }
 .eyebrow .icon { width: 16px; height: 16px; }
-.hero h1 { font-size: clamp(2.15rem, 4.6vw, 3.5rem); line-height: 1.07; margin: 0 0 18px; font-weight: 800; color: var(--ink); }
+.hero h1 { font-size: clamp(2.4rem, 5.1vw, 4rem); line-height: 1.04; margin: 0 0 20px; font-weight: 800; letter-spacing: -.035em; color: var(--ink); }
 .hero h1 .hl { color: var(--green-dark); }
-.hero p.lead { font-size: 1.2rem; color: var(--ink-2); margin: 0 0 32px; max-width: 38ch; }
+.hero p.lead { font-size: 1.24rem; line-height: 1.55; color: var(--ink-2); margin: 0 0 32px; max-width: 36ch; }
 .hero-cta { display: flex; gap: 14px; flex-wrap: wrap; }
 .hero-note { margin-top: 20px; font-size: .9rem; color: var(--ink-2); display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .hero-note span { display: inline-flex; align-items: center; gap: 7px; }
@@ -188,7 +190,7 @@ img { max-width: 100%; }
 section { padding: 88px 0; }
 .section-head { text-align: center; max-width: 640px; margin: 0 auto 52px; }
 .section-head .kicker { color: var(--green-dark); font-weight: 800; letter-spacing: .07em; text-transform: uppercase; font-size: .8rem; font-family: var(--font-head); }
-.section-head h2 { font-size: clamp(1.75rem, 3.1vw, 2.45rem); margin: 12px 0 12px; color: var(--ink); }
+.section-head h2 { font-size: clamp(1.9rem, 3.5vw, 2.7rem); letter-spacing: -.03em; margin: 12px 0 12px; color: var(--ink); }
 .section-head p { color: var(--muted); font-size: 1.1rem; margin: 0; }
 
 /* Features */

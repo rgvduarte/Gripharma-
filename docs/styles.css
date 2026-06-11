@@ -59,6 +59,7 @@ body {
 }
 
 h1, h2, h3, .brand-text strong, .modal-head h3 { font-family: var(--font-head); }
+.card-code, .badge, .stats b, .report-table td.num, .report-stat .v { font-variant-numeric: tabular-nums; }
 
 /* Foco acessível para navegação por teclado */
 :focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
@@ -183,7 +184,7 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 .card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .card-code { font-weight: 700; color: var(--green-dark); font-size: .9rem; }
 .card-time { font-size: .72rem; color: var(--muted); }
-.card-name { font-weight: 700; margin: 4px 0 2px; }
+.card-name { font-weight: 700; font-size: 1rem; letter-spacing: -.01em; margin: 4px 0 2px; }
 .card-line { font-size: .86rem; color: var(--text-2); margin: 2px 0; display: flex; gap: 6px; }
 .card-line .ico { opacity: .6; }
 .card-items { font-size: .84rem; color: var(--text-3); margin: 6px 0; white-space: pre-wrap; }
