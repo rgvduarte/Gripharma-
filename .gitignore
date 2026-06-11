@@ -3,3 +3,8 @@ data.json
 data.json.tmp
 *.log
 .DS_Store
+
+# Ferramentas de agente (skills instaladas localmente)
+.agents/
+skills-lock.json
+design-system/
