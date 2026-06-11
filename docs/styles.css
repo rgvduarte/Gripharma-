@@ -1,9 +1,10 @@
 :root {
-  --green: #7bbf2e;
-  --green-dark: #5e9a1f;
+  --green: #7bbf2e;          /* verde vivo (preenchimentos suaves) */
+  --green-solid: #3c7414;    /* fundo sólido com texto branco (AA ≥4.5:1) */
+  --green-dark: #356611;     /* texto/ícones verdes sobre claro (AA ≥4.5:1) */
   --green-soft: #eef7e2;
   --ink: #21321a;
-  --muted: #6b7280;
+  --muted: #586273;
   --bg: #f4f6f3;
   --card: #ffffff;
   --line: #e5e7eb;
@@ -28,6 +29,7 @@
 }
 
 [data-theme="dark"] {
+  --green-solid: #4f8f1c;
   --green-dark: #9bd455;
   --green-soft: #233318;
   --ink: #e8efe3;
@@ -121,7 +123,7 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
   border: 0; background: transparent; padding: 8px 16px; border-radius: 999px;
   font-size: .92rem; cursor: pointer; color: var(--muted); font-weight: 600;
 }
-.role-btn.active { background: var(--green); color: #fff; box-shadow: var(--shadow); }
+.role-btn.active { background: var(--green-solid); color: #fff; box-shadow: var(--shadow); }
 
 /* ------------------------------ Container ------------------------------ */
 .container { max-width: 1280px; margin: 0 auto; padding: 16px; }
@@ -148,8 +150,8 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 .btn:hover { background: var(--hover); }
 .btn:active { transform: translateY(1px); }
 .btn-primary, .btn-ok { min-height: 40px; }
-.btn-primary { background: var(--green); border-color: var(--green); color: #fff; }
-.btn-primary:hover { background: var(--green-dark); }
+.btn-primary { background: var(--green-solid); border-color: var(--green-solid); color: #fff; }
+.btn-primary:hover { filter: brightness(.92); }
 .btn-ok { background: var(--cold); border-color: var(--cold); color: #fff; }
 .btn-ok:hover { filter: brightness(.95); }
 .btn-danger { color: var(--danger); border-color: #f3c2c2; }
