@@ -14,6 +14,8 @@
 
 const STORAGE_KEY = 'gripharma_orders_v1';
 const PREFS_KEY = 'gripharma_prefs_v1';
+const OPERATORS_KEY = 'gripharma_operators_v1';
+function demoOperators() { try { return JSON.parse(localStorage.getItem(OPERATORS_KEY)) || []; } catch (_) { return []; } }
 
 let MODE = 'demo'; // 'api' | 'demo'
 let prefs = loadPrefs();
@@ -26,6 +28,7 @@ async function init() {
   await detectMode();
   setupUI();
   initTheme();
+  renderSession();
   applyRole(prefs.role || 'farmacia');
   await refresh();
   if (MODE === 'api') setInterval(refresh, 5000); // mantém PC e telemóvel a par
@@ -60,6 +63,32 @@ const store = {
   async shareLocation(name, lat, lng) {
     if (MODE !== 'api') return;
     await postJSON('api/couriers/location', 'POST', { name, lat, lng });
+  },
+  async login(pin) {
+    if (MODE === 'api') {
+      const r = await fetch('api/operators/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'PIN inválido.');
+      return d.operator;
+    }
+    const op = demoOperators().find((o) => o.pin === String(pin));
+    if (!op) throw new Error('PIN inválido.');
+    return { id: op.id, name: op.name };
+  },
+  async createOperator(name, pin) {
+    if (MODE === 'api') {
+      const r = await fetch('api/operators', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, pin }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'Erro ao criar operador.');
+      return d.operator;
+    }
+    if (!/^\d{4,6}$/.test(String(pin))) throw new Error('PIN deve ter 4 a 6 dígitos.');
+    const all = demoOperators();
+    if (all.some((o) => o.name.toLowerCase() === name.toLowerCase())) throw new Error('Já existe um operador com esse nome.');
+    if (all.some((o) => o.pin === String(pin))) throw new Error('Esse PIN já está em uso.');
+    const op = { id: uuid(), name, pin: String(pin) };
+    all.push(op); localStorage.setItem(OPERATORS_KEY, JSON.stringify(all));
+    return { id: op.id, name: op.name };
   },
   async create(data, operator) {
     if (MODE === 'api') return postJSON('api/orders', 'POST', { ...data, operator });
@@ -139,21 +168,44 @@ function uuid() {
     });
 }
 
-/* --------------------------- Identidade / papel ------------------------ */
+/* --------------------------- Sessão / operador ------------------------- */
 
-function operatorName() { return (document.getElementById('operatorName').value || '').trim(); }
-function courierName() { return (document.getElementById('courierName').value || '').trim(); }
+function currentUser() { return (prefs.session && prefs.session.name) || ''; }
 
 function requireOperator() {
-  const n = operatorName();
-  if (!n) { toast('Indica o teu nome (Operador) no canto superior.'); document.getElementById('operatorName').focus(); }
-  return n;
+  const u = currentUser();
+  if (!u) { toast('Inicia sessão para registar a operação.'); openLogin(); }
+  return u;
 }
-function requireCourier() {
-  const n = courierName();
-  if (!n) { toast('Indica o teu nome (Estafeta) no topo.'); document.getElementById('courierName').focus(); }
-  return n;
+const requireCourier = requireOperator; // mesma identidade (quem está em sessão)
+
+function renderSession() {
+  const el = document.getElementById('sessionArea');
+  if (!el) return;
+  if (currentUser()) {
+    el.innerHTML = `<span class="who"><svg class="ic"><use href="#i-user"/></svg> <b>${esc(currentUser())}</b></span>`
+      + `<button class="chip-btn" id="btnLogout" title="Terminar sessão" aria-label="Terminar sessão"><svg class="ic"><use href="#i-logout"/></svg></button>`;
+  } else {
+    el.innerHTML = `<button class="chip-btn has-label" id="btnLogin"><svg class="ic"><use href="#i-user"/></svg> Entrar</button>`;
+  }
 }
+
+function openLogin() {
+  const m = document.getElementById('loginModal');
+  document.getElementById('loginForm').reset();
+  document.getElementById('createOpForm').reset();
+  document.getElementById('createOpDetails').open = false;
+  m.hidden = false;
+  setTimeout(() => document.querySelector('#loginForm input[name=pin]').focus(), 50);
+}
+function closeLogin() { document.getElementById('loginModal').hidden = true; }
+
+function setSession(op) {
+  prefs.session = { id: op.id, name: op.name };
+  savePrefs();
+  renderSession();
+}
+function logout() { prefs.session = null; savePrefs(); renderSession(); }
 
 /* ------------------------------- Render -------------------------------- */
 
@@ -294,17 +346,19 @@ function setupUI() {
   document.getElementById('search').addEventListener('input', renderFarmacia);
   document.getElementById('btnNew').addEventListener('click', () => { if (requireOperator()) openModal(); });
 
-  const op = document.getElementById('operatorName');
-  op.value = prefs.operatorName || '';
-  op.addEventListener('input', () => { prefs.operatorName = op.value; savePrefs(); });
-
-  const cn = document.getElementById('courierName');
-  cn.value = prefs.courierName || '';
-  cn.addEventListener('input', () => { prefs.courierName = cn.value; savePrefs(); });
-
   document.getElementById('shareLocation').addEventListener('change', onToggleLocation);
   document.getElementById('themeToggle').addEventListener('click', () =>
     applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
+
+  // Sessão / login
+  document.getElementById('sessionArea').addEventListener('click', (e) => {
+    if (e.target.closest('#btnLogin')) openLogin();
+    else if (e.target.closest('#btnLogout')) logout();
+  });
+  const lm = document.getElementById('loginModal');
+  lm.addEventListener('click', (e) => { if (e.target === lm || e.target.hasAttribute('data-close-login')) closeLogin(); });
+  document.getElementById('loginForm').addEventListener('submit', onSubmitLogin);
+  document.getElementById('createOpForm').addEventListener('submit', onSubmitCreateOp);
 
   document.querySelector('main').addEventListener('click', onCardClick);
 
@@ -315,6 +369,28 @@ function setupUI() {
   const dm = document.getElementById('deliverModal');
   dm.addEventListener('click', (e) => { if (e.target === dm || e.target.hasAttribute('data-close-deliver')) dm.hidden = true; });
   document.getElementById('deliverForm').addEventListener('submit', onSubmitDeliver);
+}
+
+async function onSubmitLogin(e) {
+  e.preventDefault();
+  const pin = e.target.pin.value.trim();
+  if (!pin) return;
+  try {
+    const op = await store.login(pin);
+    setSession(op); closeLogin(); await refresh();
+    toast('Sessão iniciada: ' + op.name);
+  } catch (err) { toast(err.message); }
+}
+async function onSubmitCreateOp(e) {
+  e.preventDefault();
+  const name = e.target.name.value.trim();
+  const pin = e.target.pin.value.trim();
+  if (!name || !pin) return toast('Indica nome e PIN.');
+  try {
+    const op = await store.createOperator(name, pin);
+    setSession(op); closeLogin(); await refresh();
+    toast('Operador criado. Sessão iniciada: ' + op.name);
+  } catch (err) { toast(err.message); }
 }
 
 /* ------------------------------- Tema ---------------------------------- */
@@ -336,8 +412,6 @@ function applyRole(role) {
   document.querySelectorAll('.role-btn').forEach((b) => b.classList.toggle('active', b.dataset.role === role));
   document.getElementById('view-farmacia').hidden = role !== 'farmacia';
   document.getElementById('view-estafeta').hidden = role !== 'estafeta';
-  document.getElementById('whoFarmacia').hidden = role !== 'farmacia';
-  document.getElementById('whoEstafeta').hidden = role !== 'estafeta';
 }
 
 async function onCardClick(e) {
@@ -386,7 +460,7 @@ function onToggleLocation(e) {
         const t = Date.now();
         if (t - last < 15000) return; // no máx. a cada 15s
         last = t;
-        store.shareLocation(courierName(), pos.coords.latitude, pos.coords.longitude)
+        store.shareLocation(currentUser(), pos.coords.latitude, pos.coords.longitude)
           .then(() => { status.textContent = 'Localização partilhada · ' + fmtTime(new Date().toISOString()); })
           .catch(() => {});
       },

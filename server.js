@@ -31,9 +31,10 @@ function loadData() {
     if (!Array.isArray(data.orders)) data.orders = [];
     if (typeof data.counter !== 'number') data.counter = data.orders.length;
     if (typeof data.couriers !== 'object' || !data.couriers) data.couriers = {};
+    if (!Array.isArray(data.operators)) data.operators = [];
     return data;
   } catch (_) {
-    return { orders: [], counter: 0, couriers: {} };
+    return { orders: [], counter: 0, couriers: {}, operators: [] };
   }
 }
 
@@ -118,6 +119,37 @@ async function handleApi(req, res, url) {
       const name = str(body.name);
       if (!name) return sendJSON(res, 400, { error: 'Nome do estafeta em falta' });
       DB.couriers[name] = { lat: num(body.lat), lng: num(body.lng), at: nowISO() };
+      saveData();
+      return sendJSON(res, 200, { ok: true });
+    }
+    return sendJSON(res, 405, { error: 'Método não permitido' });
+  }
+
+  /* ----------------------------- Operadores ---------------------------- */
+  if (resource === 'operators') {
+    if (req.method === 'GET') {
+      return sendJSON(res, 200, { operators: DB.operators.map((o) => ({ id: o.id, name: o.name })) });
+    }
+    if (req.method === 'POST' && parts[2] === 'login') {
+      const body = await readBody(req);
+      const op = DB.operators.find((o) => o.pin === str(body.pin));
+      if (!op) return sendJSON(res, 401, { error: 'PIN inválido.' });
+      return sendJSON(res, 200, { operator: { id: op.id, name: op.name } });
+    }
+    if (req.method === 'POST' && !parts[2]) {
+      const body = await readBody(req);
+      const name = str(body.name);
+      const pin = str(body.pin);
+      if (!name || !/^\d{4,6}$/.test(pin)) return sendJSON(res, 400, { error: 'Nome e PIN (4 a 6 dígitos) obrigatórios.' });
+      if (DB.operators.some((o) => o.name.toLowerCase() === name.toLowerCase())) return sendJSON(res, 409, { error: 'Já existe um operador com esse nome.' });
+      if (DB.operators.some((o) => o.pin === pin)) return sendJSON(res, 409, { error: 'Esse PIN já está em uso.' });
+      const op = { id: crypto.randomUUID(), name, pin };
+      DB.operators.push(op);
+      saveData();
+      return sendJSON(res, 201, { operator: { id: op.id, name: op.name } });
+    }
+    if (req.method === 'DELETE' && parts[2]) {
+      DB.operators = DB.operators.filter((o) => o.id !== parts[2]);
       saveData();
       return sendJSON(res, 200, { ok: true });
     }

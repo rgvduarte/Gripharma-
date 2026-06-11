@@ -106,6 +106,15 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 .chip-btn:hover { background: var(--hover); border-color: var(--green); }
 .chip-btn.has-label { width: auto; padding: 0 14px; }
 
+.session-area { display: flex; align-items: center; gap: 8px; }
+.session-area .who b { color: var(--ink); }
+.login-sep { text-align: center; margin: 16px 0; color: var(--muted); font-size: .8rem; position: relative; }
+.login-sep span { background: var(--elev); padding: 0 10px; position: relative; z-index: 1; }
+.login-sep::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: var(--line); }
+#createOpDetails summary { cursor: pointer; font-weight: 600; font-size: .9rem; color: var(--green-dark); }
+#createOpForm { margin-top: 12px; display: flex; flex-direction: column; gap: 12px; }
+.login-note { font-size: .76rem; color: var(--muted); margin: 16px 0 0; }
+
 .roles { display: flex; gap: 6px; background: var(--bg); padding: 4px; border-radius: 999px; }
 .role-btn {
   display: inline-flex; align-items: center; gap: 7px;
