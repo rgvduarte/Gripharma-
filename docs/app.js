@@ -25,6 +25,7 @@ let geoWatchId = null;
 async function init() {
   await detectMode();
   setupUI();
+  initTheme();
   applyRole(prefs.role || 'farmacia');
   await refresh();
   if (MODE === 'api') setInterval(refresh, 5000); // mantém PC e telemóvel a par
@@ -302,6 +303,8 @@ function setupUI() {
   cn.addEventListener('input', () => { prefs.courierName = cn.value; savePrefs(); });
 
   document.getElementById('shareLocation').addEventListener('change', onToggleLocation);
+  document.getElementById('themeToggle').addEventListener('click', () =>
+    applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
 
   document.querySelector('main').addEventListener('click', onCardClick);
 
@@ -312,6 +315,20 @@ function setupUI() {
   const dm = document.getElementById('deliverModal');
   dm.addEventListener('click', (e) => { if (e.target === dm || e.target.hasAttribute('data-close-deliver')) dm.hidden = true; });
   document.getElementById('deliverForm').addEventListener('submit', onSubmitDeliver);
+}
+
+/* ------------------------------- Tema ---------------------------------- */
+
+function applyTheme(theme) {
+  const dark = theme === 'dark';
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  prefs.theme = dark ? 'dark' : 'light'; savePrefs();
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.innerHTML = `<svg class="ic"><use href="#i-${dark ? 'sun' : 'moon'}"/></svg>`;
+}
+function initTheme() {
+  const sysDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(prefs.theme || (sysDark ? 'dark' : 'light'));
 }
 
 function applyRole(role) {
