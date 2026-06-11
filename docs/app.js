@@ -203,20 +203,21 @@ async function renderCouriers() {
   panel.hidden = false;
   panel.innerHTML = '<strong style="font-size:.8rem;color:var(--muted)">Estafetas em rota:</strong>' +
     list.map((c) =>
-      `<span class="courier-chip">🛵 ${esc(c.name)} · ${ago(c.at)}` +
-      ` · <a href="https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}" target="_blank" rel="noopener">🗺️ ver no mapa</a></span>`
+      `<span class="courier-chip">${ic('bike')} ${esc(c.name)} · ${ago(c.at)}` +
+      ` · <a href="https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}" target="_blank" rel="noopener">${ic('map')} ver no mapa</a></span>`
     ).join('');
 }
 
 function badges(o) {
   const b = [];
   const amt = Number(o.paymentAmount) || 0;
-  if (o.paymentStatus === 'pago') b.push(`<span class="badge pay-pago">✓ Pago${amt ? ' ' + amt.toFixed(2) + '€' : ''}</span>`);
-  else b.push(`<span class="badge pay-cobrar">€ Cobrar${amt ? ' ' + amt.toFixed(2) + '€' : ''}</span>`);
-  if (o.requiresPrescription) b.push('<span class="badge rx">📄 Receita</span>');
-  if (o.refrigerated) b.push('<span class="badge cold">❄️ Frio</span>');
-  if (o.callOnArrival) b.push('<span class="badge call">📞 Ligar ao chegar</span>');
-  if (o.invoiced) b.push('<span class="badge pay-pago">🧾 Faturado</span>');
+  if (o.paymentStatus === 'pago') b.push(`<span class="badge pay-pago">${ic('check')} Pago${amt ? ' ' + amt.toFixed(2) + '€' : ''}</span>`);
+  else b.push(`<span class="badge pay-cobrar">${ic('wallet')} Cobrar${amt ? ' ' + amt.toFixed(2) + '€' : ''}</span>`);
+  if (o.requiresPrescription) b.push(`<span class="badge rx">${ic('file')} Receita</span>`);
+  if (o.refrigerated) b.push(`<span class="badge cold">${ic('snow')} Frio</span>`);
+  if (o.callOnArrival) b.push(`<span class="badge call">${ic('phone')} Ligar ao chegar</span>`);
+  if (o.invoiced) b.push(`<span class="badge pay-pago">${ic('receipt')} Faturado</span>`);
+  if (o.courier) b.push(`<span class="badge courier">${ic('bike')} ${esc(o.courier)}</span>`);
   return b.join('');
 }
 
@@ -234,10 +235,10 @@ function cardCommon(o) {
   return (
     `<div class="card-top"><span class="card-code">${esc(o.code)}</span><span class="card-time">${fmtTime(o.createdAt)}</span></div>` +
     `<div class="card-name">${esc(o.customerName)}</div>` +
-    `<div class="card-line"><span class="ico">📍</span>${esc(o.customerAddress)}</div>` +
-    (o.customerPhone ? `<div class="card-line"><span class="ico">📞</span><a href="tel:${esc(o.customerPhone)}">${esc(o.customerPhone)}</a></div>` : '') +
-    (o.items ? `<div class="card-items">💊 ${esc(o.items)}</div>` : '') +
-    (o.notes ? `<div class="card-line"><span class="ico">📝</span>${esc(o.notes)}</div>` : '') +
+    `<div class="card-line">${ic('pin')} ${esc(o.customerAddress)}</div>` +
+    (o.customerPhone ? `<div class="card-line">${ic('phone')} <a href="tel:${esc(o.customerPhone)}">${esc(o.customerPhone)}</a></div>` : '') +
+    (o.items ? `<div class="card-items">${ic('pill')} ${esc(o.items)}</div>` : '') +
+    (o.notes ? `<div class="card-line">${ic('pencil')} ${esc(o.notes)}</div>` : '') +
     `<div class="badges">${badges(o)}</div>`
   );
 }
@@ -246,13 +247,13 @@ function cardFarmacia(o) {
   let actions = '';
   if (o.status === 'pendente') {
     actions =
-      (o.invoiced ? '' : `<button class="btn btn-sm" data-act="invoice" data-id="${o.id}">🧾 Faturar</button>`) +
+      (o.invoiced ? '' : `<button class="btn btn-sm" data-act="invoice" data-id="${o.id}">${ic('receipt')} Faturar</button>`) +
       `<button class="btn btn-sm btn-primary" data-act="status" data-id="${o.id}" data-status="pronto">Marcar pronto</button>` +
       `<button class="btn btn-sm" data-act="edit" data-id="${o.id}">Editar</button>` +
       `<button class="btn btn-sm btn-danger" data-act="cancel" data-id="${o.id}">✕</button>`;
   } else if (o.status === 'pronto') {
     actions =
-      (o.invoiced ? '' : `<button class="btn btn-sm" data-act="invoice" data-id="${o.id}">🧾 Faturar</button>`) +
+      (o.invoiced ? '' : `<button class="btn btn-sm" data-act="invoice" data-id="${o.id}">${ic('receipt')} Faturar</button>`) +
       `<button class="btn btn-sm" data-act="status" data-id="${o.id}" data-status="pendente">↩ Voltar</button>` +
       `<button class="btn btn-sm" data-act="edit" data-id="${o.id}">Editar</button>`;
   } else if (o.status === 'recolhido') {
@@ -274,12 +275,12 @@ function renderEstafeta() {
 
 function cardRecolher(o) {
   return `<div class="card">${cardCommon(o)}<div class="card-actions">` +
-    `<button class="btn btn-primary btn-block" data-act="recolher" data-id="${o.id}">🛵 Recolhi este pedido</button></div></div>`;
+    `<button class="btn btn-primary btn-block" data-act="recolher" data-id="${o.id}">${ic('bike')} Recolhi este pedido</button></div></div>`;
 }
 function cardEntrega(o) {
   return `<div class="card">${cardCommon(o)}${stampsLine(o)}<div class="card-actions">` +
-    `<a class="btn btn-sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.customerAddress)}" target="_blank" rel="noopener">🗺️ Mapa</a>` +
-    `<button class="btn btn-ok" data-act="deliver" data-id="${o.id}">✅ Confirmar entrega</button></div></div>`;
+    `<a class="btn btn-sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.customerAddress)}" target="_blank" rel="noopener">${ic('map')} Mapa</a>` +
+    `<button class="btn btn-ok" data-act="deliver" data-id="${o.id}">${ic('check')} Confirmar entrega</button></div></div>`;
 }
 
 /* ------------------------------- Eventos ------------------------------- */
@@ -334,7 +335,7 @@ async function onCardClick(e) {
     } else if (act === 'invoice') {
       const operator = requireOperator(); if (!operator) return;
       await store.invoice(id, operator);
-      toast('Marcado como faturado 🧾');
+      toast('Marcado como faturado.');
     } else if (act === 'edit') {
       return openModal(order);
     } else if (act === 'cancel') {
@@ -344,7 +345,7 @@ async function onCardClick(e) {
     } else if (act === 'recolher') {
       const courier = requireCourier(); if (!courier) return;
       await store.setStatus(id, 'recolhido', { courier, operator: courier, note: 'Recolhido pelo estafeta' });
-      toast('Pedido recolhido. Boa viagem! 🛵');
+      toast('Pedido recolhido. Boa viagem!');
     } else if (act === 'deliver') {
       return openDeliver(order);
     }
@@ -458,11 +459,13 @@ async function onSubmitDeliver(e) {
     });
     document.getElementById('deliverModal').hidden = true;
     await refresh();
-    toast('Entrega confirmada! ✅');
+    toast('Entrega confirmada!');
   } catch (err) { toast('Erro: ' + err.message); }
 }
 
 /* ------------------------------- Utils --------------------------------- */
+
+function ic(name) { return `<svg class="ic" aria-hidden="true"><use href="#i-${name}"/></svg>`; }
 
 function esc(s) {
   return String(s == null ? '' : s)

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gripharma — Entregas ao Domicílio</title>
   <meta name="description" content="Gestão interna de entregas ao domicílio da farmácia." />
-  <meta name="theme-color" content="#7bbf2e" />
+  <meta name="theme-color" content="#6fae28" />
   <link rel="icon" type="image/svg+xml" href="assets/logo.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,24 +13,42 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <!-- ===================== Sprite de ícones (Lucide) ===================== -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/></symbol>
+    <symbol id="i-pill" viewBox="0 0 24 24"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></symbol>
+    <symbol id="i-snow" viewBox="0 0 24 24"><path d="M2 12h20"/><path d="M12 2v20"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></symbol>
+    <symbol id="i-bike" viewBox="0 0 24 24"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-package" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="m7.5 4.27 9 5.15"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></symbol>
+    <symbol id="i-cross" viewBox="0 0 24 24"><path d="M11 2a2 2 0 0 0-2 2v5H4a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h5v5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-5h5a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2h-5V4a2 2 0 0 0-2-2z"/></symbol>
+  </svg>
+
   <header class="topbar">
     <a class="brand" href="index.html" title="Voltar ao início">
-      <img src="assets/logo.jpg" alt="Gripharma" class="brand-logo" />
+      <img src="assets/logo.jpg" alt="Logótipo gripharma" class="brand-logo" />
       <div class="brand-text">
         <strong>Entregas ao Domicílio</strong>
         <span id="modeBadge" class="mode-badge" title="Modo de funcionamento"></span>
       </div>
     </a>
     <div class="topbar-right">
-      <label class="who" id="whoFarmacia">👤 Operador:
+      <label class="who" id="whoFarmacia"><svg class="ic"><use href="#i-user"/></svg> Operador:
         <input id="operatorName" class="input-inline" type="text" placeholder="O teu nome" autocomplete="off" />
       </label>
-      <label class="who" id="whoEstafeta" hidden>🛵 Estafeta:
+      <label class="who" id="whoEstafeta" hidden><svg class="ic"><use href="#i-bike"/></svg> Estafeta:
         <input id="courierName" class="input-inline" type="text" placeholder="O teu nome" autocomplete="off" />
       </label>
       <nav class="roles" id="roleSwitch">
-        <button class="role-btn" data-role="farmacia">🏥 Farmácia</button>
-        <button class="role-btn" data-role="estafeta">🛵 Estafeta</button>
+        <button class="role-btn" data-role="farmacia"><svg class="ic"><use href="#i-cross"/></svg> Farmácia</button>
+        <button class="role-btn" data-role="estafeta"><svg class="ic"><use href="#i-bike"/></svg> Estafeta</button>
       </nav>
     </div>
   </header>
@@ -72,15 +90,15 @@
     <section id="view-estafeta" class="view" hidden>
       <div class="courier-bar">
         <label class="loc-toggle">
-          <input type="checkbox" id="shareLocation" /> 📍 Partilhar a minha localização com a farmácia
+          <input type="checkbox" id="shareLocation" /> <svg class="ic"><use href="#i-pin"/></svg> Partilhar a minha localização com a farmácia
         </label>
         <span id="locStatus" class="loc-status"></span>
       </div>
 
-      <h2 class="section-title">📦 Para recolher na farmácia <span class="count" id="cntRecolher">0</span></h2>
+      <h2 class="section-title"><svg class="ic"><use href="#i-package"/></svg> Para recolher na farmácia <span class="count" id="cntRecolher">0</span></h2>
       <div class="cards courier-list" id="listRecolher"></div>
 
-      <h2 class="section-title">🛵 Em entrega <span class="count" id="cntEntrega">0</span></h2>
+      <h2 class="section-title"><svg class="ic"><use href="#i-bike"/></svg> Em entrega <span class="count" id="cntEntrega">0</span></h2>
       <div class="cards courier-list" id="listEntrega"></div>
     </section>
   </main>
@@ -120,9 +138,9 @@
           </label>
         </div>
         <div class="checks">
-          <label class="check"><input type="checkbox" name="requiresPrescription" /> 📄 Precisa de receita médica</label>
-          <label class="check"><input type="checkbox" name="refrigerated" /> ❄️ Refrigerado (frio)</label>
-          <label class="check"><input type="checkbox" name="callOnArrival" /> 📞 Ligar ao chegar (cliente desce)</label>
+          <label class="check"><input type="checkbox" name="requiresPrescription" /> <svg class="ic"><use href="#i-file"/></svg> Precisa de receita médica</label>
+          <label class="check"><input type="checkbox" name="refrigerated" /> <svg class="ic"><use href="#i-snow"/></svg> Refrigerado (frio)</label>
+          <label class="check"><input type="checkbox" name="callOnArrival" /> <svg class="ic"><use href="#i-phone"/></svg> Ligar ao chegar (cliente desce)</label>
         </div>
         <label>Instruções para a entrega
           <input name="notes" type="text" placeholder="Ex.: 3º andar sem elevador; entregar só ao próprio…" autocomplete="off" />
@@ -156,14 +174,14 @@
           <input name="receivedBy" type="text" autocomplete="off" placeholder="Nome de quem recebeu" />
         </label>
         <div id="payRow" class="pay-row" hidden>
-          <label class="check"><input type="checkbox" name="paymentCollected" /> 💶 Recebi o pagamento de <b id="payAmount"></b></label>
+          <label class="check"><input type="checkbox" name="paymentCollected" /> <svg class="ic"><use href="#i-wallet"/></svg> Recebi o pagamento de <b id="payAmount"></b></label>
         </div>
         <label>Nota da entrega (opcional)
           <input name="note" type="text" autocomplete="off" placeholder="Ex.: cliente não estava, deixei com vizinha do 2º" />
         </label>
         <div class="modal-actions">
           <button type="button" class="btn" data-close-deliver>Cancelar</button>
-          <button type="submit" class="btn btn-ok">✅ Confirmar entrega</button>
+          <button type="submit" class="btn btn-ok"><svg class="ic"><use href="#i-check"/></svg> Confirmar entrega</button>
         </div>
       </form>
     </div>

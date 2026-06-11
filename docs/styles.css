@@ -40,6 +40,12 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
   *, *::before, *::after { transition-duration: .001ms !important; animation-duration: .001ms !important; }
 }
 
+/* Ícones SVG inline (estilo Lucide) */
+.ic { width: 1.05em; height: 1.05em; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -0.18em; flex: none; }
+.badge .ic { width: 1em; height: 1em; vertical-align: -0.15em; }
+.card-line .ic, .card-items .ic { width: 1em; height: 1em; color: var(--muted); }
+.who .ic, .loc-toggle .ic, .section-title .ic { color: var(--green-dark); }
+
 /* ------------------------------- Topbar -------------------------------- */
 .topbar {
   display: flex;
@@ -66,6 +72,7 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 
 .roles { display: flex; gap: 6px; background: var(--bg); padding: 4px; border-radius: 999px; }
 .role-btn {
+  display: inline-flex; align-items: center; gap: 7px;
   border: 0; background: transparent; padding: 8px 16px; border-radius: 999px;
   font-size: .92rem; cursor: pointer; color: var(--muted); font-weight: 600;
 }
