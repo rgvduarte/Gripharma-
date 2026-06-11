@@ -64,6 +64,7 @@
         <div class="stats" id="stats"></div>
         <div class="toolbar-actions">
           <input id="search" class="search" type="search" placeholder="Procurar cliente, morada, código…" />
+          <button id="btnReport" class="btn"><svg class="ic"><use href="#i-report"/></svg> Relatório</button>
           <button id="btnNew" class="btn btn-primary">+ Novo pedido</button>
         </div>
       </div>
@@ -186,6 +187,22 @@
           <button type="submit" class="btn btn-ok"><svg class="ic"><use href="#i-check"/></svg> Confirmar entrega</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ====================== MODAL: RELATÓRIO ====================== -->
+  <div id="reportModal" class="modal" hidden>
+    <div class="modal-box report-box">
+      <div class="modal-head">
+        <h3>Relatório de entregas — <span id="reportDate"></span></h3>
+        <button class="icon-btn" data-close-report>✕</button>
+      </div>
+      <div class="report-body" id="reportBody"></div>
+      <div class="modal-actions report-actions">
+        <button class="btn" type="button" data-close-report>Fechar</button>
+        <button class="btn" type="button" id="btnExportCsv"><svg class="ic"><use href="#i-download"/></svg> Exportar CSV</button>
+        <button class="btn btn-primary" type="button" id="btnPrintReport"><svg class="ic"><use href="#i-printer"/></svg> Imprimir / PDF</button>
+      </div>
     </div>
   </div>
 

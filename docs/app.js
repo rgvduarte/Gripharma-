@@ -360,6 +360,13 @@ function setupUI() {
   document.getElementById('loginForm').addEventListener('submit', onSubmitLogin);
   document.getElementById('createOpForm').addEventListener('submit', onSubmitCreateOp);
 
+  // Relatório
+  document.getElementById('btnReport').addEventListener('click', openReport);
+  const rm = document.getElementById('reportModal');
+  rm.addEventListener('click', (e) => { if (e.target === rm || e.target.hasAttribute('data-close-report')) rm.hidden = true; });
+  document.getElementById('btnExportCsv').addEventListener('click', exportReportCsv);
+  document.getElementById('btnPrintReport').addEventListener('click', () => window.print());
+
   document.querySelector('main').addEventListener('click', onCardClick);
 
   const modal = document.getElementById('modal');
@@ -552,6 +559,75 @@ async function onSubmitDeliver(e) {
     await refresh();
     toast('Entrega confirmada!');
   } catch (err) { toast('Erro: ' + err.message); }
+}
+
+/* ------------------------------ Relatório ------------------------------ */
+
+function reportRows() {
+  return orders
+    .filter((o) => o.status === 'entregue' && isToday(o.deliveredAt || o.updatedAt))
+    .sort((a, b) => ((a.deliveredAt || a.updatedAt) < (b.deliveredAt || b.updatedAt) ? -1 : 1));
+}
+
+function openReport() {
+  const rows = reportRows();
+  document.getElementById('reportDate').textContent =
+    new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+  const body = document.getElementById('reportBody');
+  if (!rows.length) {
+    body.innerHTML = '<div class="report-empty">Ainda não há entregas registadas hoje.</div>';
+  } else {
+    const total = rows.reduce((s, o) => s + (Number(o.paymentAmount) || 0), 0);
+    const cobrado = rows.filter((o) => o.paymentStatus === 'pago').reduce((s, o) => s + (Number(o.paymentAmount) || 0), 0);
+    const byCourier = {};
+    rows.forEach((o) => { const c = o.deliveredBy || o.courier || '—'; byCourier[c] = (byCourier[c] || 0) + 1; });
+    const byCourierStr = Object.entries(byCourier).map(([c, n]) => `${esc(c)}: ${n}`).join(' · ');
+    body.innerHTML =
+      `<div class="report-summary">
+         <div class="report-stat"><div class="v">${rows.length}</div><div class="l">Entregas</div></div>
+         <div class="report-stat"><div class="v">${cobrado.toFixed(2)}€</div><div class="l">Cobrado na entrega</div></div>
+         <div class="report-stat"><div class="v">${total.toFixed(2)}€</div><div class="l">Valor total entregue</div></div>
+       </div>
+       <div class="report-bycourier"><b>Por estafeta:</b> ${byCourierStr}</div>
+       <table class="report-table"><thead><tr>
+         <th>Hora</th><th>Código</th><th>Cliente</th><th>Estafeta</th><th>Desfecho</th><th class="num">Valor</th><th>Pagamento</th>
+       </tr></thead><tbody>` +
+      rows.map((o) => `<tr>
+         <td>${fmtTime(o.deliveredAt || o.updatedAt)}</td>
+         <td>${esc(o.code)}</td>
+         <td>${esc(o.customerName)}</td>
+         <td>${esc(o.deliveredBy || o.courier || '—')}</td>
+         <td>${esc(o.deliveryOutcome || '—')}</td>
+         <td class="num">${(Number(o.paymentAmount) || 0).toFixed(2)}€</td>
+         <td>${o.paymentStatus === 'pago' ? 'Pago' : 'A cobrar'}</td>
+       </tr>`).join('') +
+      '</tbody></table>';
+  }
+  document.getElementById('reportModal').hidden = false;
+}
+
+function csvCell(v) {
+  const s = String(v == null ? '' : v);
+  return /[";\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function exportReportCsv() {
+  const rows = reportRows();
+  const header = ['Hora', 'Codigo', 'Cliente', 'Telefone', 'Morada', 'Estafeta', 'Desfecho', 'Valor', 'Pagamento', 'RecebidoPor'];
+  const lines = [header.join(';')];
+  rows.forEach((o) => {
+    lines.push([
+      fmtTime(o.deliveredAt || o.updatedAt), o.code, o.customerName, o.customerPhone, o.customerAddress,
+      o.deliveredBy || o.courier || '', o.deliveryOutcome || '',
+      (Number(o.paymentAmount) || 0).toFixed(2), o.paymentStatus === 'pago' ? 'Pago' : 'A cobrar', o.receivedBy || '',
+    ].map(csvCell).join(';'));
+  });
+  const csv = '\uFEFF' + lines.join('\r\n'); // BOM para o Excel reconhecer UTF-8
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `entregas-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
 }
 
 /* ------------------------------- Utils --------------------------------- */
