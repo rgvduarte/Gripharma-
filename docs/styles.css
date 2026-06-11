@@ -49,6 +49,10 @@
 
 * { box-sizing: border-box; }
 
+/* Garante que o atributo `hidden` esconde sempre (mesmo .modal/.couriers-panel
+   que definem display) — caso contrário os modais nunca fechavam. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   font-family: var(--font-body);
