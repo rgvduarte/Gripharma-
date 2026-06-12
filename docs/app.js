@@ -1100,6 +1100,7 @@ async function onSubmitDeliver(e) {
     });
     document.getElementById('deliverModal').hidden = true;
     await refresh();
+    showSuccess();
     toast(failed ? 'Entrega registada — pagamento passou a Ref. MB (alerta na farmácia).' : 'Entrega confirmada!');
   } catch (err) { toast('Erro: ' + err.message); }
 }
@@ -1191,6 +1192,19 @@ function ago(iso) {
   if (m === 1) return 'há 1 min';
   return 'há ' + m + ' min';
 }
+function showSuccess() {
+  try {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const d = document.createElement('div');
+    d.className = 'success-pop';
+    d.setAttribute('aria-hidden', 'true');
+    d.innerHTML = '<svg viewBox="0 0 56 56"><circle class="s-circle" cx="28" cy="28" r="26" fill="none" stroke="#3c7414" stroke-width="3"/>'
+      + '<path class="s-tick" d="M16 29l8 8 16-18" fill="none" stroke="#3c7414" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 1300);
+  } catch (_) { /* nada */ }
+}
+
 let toastTimer;
 function toast(msg) {
   const el = document.getElementById('toast');

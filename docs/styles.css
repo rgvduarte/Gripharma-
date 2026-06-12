@@ -392,6 +392,23 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
   body.printing-report .report-actions, body.printing-report .icon-btn { display: none !important; }
 }
 
+/* --------------------- Animação de sucesso (entrega) ------------------- */
+.success-pop {
+  position: fixed; inset: 0; display: grid; place-items: center; z-index: 70;
+  pointer-events: none; animation: success-fade 1.2s ease forwards;
+}
+.success-pop svg { width: 132px; height: 132px; filter: drop-shadow(0 8px 24px rgba(60, 116, 20, .35)); }
+.success-pop .s-circle { stroke-dasharray: 166; stroke-dashoffset: 166; animation: success-draw .5s var(--ease-out, ease) forwards; }
+.success-pop .s-tick { stroke-dasharray: 48; stroke-dashoffset: 48; animation: success-draw .35s var(--ease-out, ease) .34s forwards; }
+@keyframes success-draw { to { stroke-dashoffset: 0; } }
+@keyframes success-fade {
+  0% { opacity: 0; transform: scale(.82); }
+  14% { opacity: 1; transform: scale(1); }
+  78% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.02); }
+}
+@media (prefers-reduced-motion: reduce) { .success-pop { display: none; } }
+
 /* -------------------------------- Toast -------------------------------- */
 .toast {
   position: fixed; bottom: 20px; left: 50%;

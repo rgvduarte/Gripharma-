@@ -265,6 +265,10 @@ section { padding: 108px 0; }
 .reveal.d2 { animation-delay: .16s; }
 .reveal.d3 { animation-delay: .24s; }
 
+/* Palavras animáveis do título (anime.js) */
+.aword { display: inline-block; will-change: transform; }
+.hero .mock { transform-style: preserve-3d; }
+
 /* Revelação ao scroll (só quando o JS está ativo) */
 .js .will-reveal { opacity: 0; transform: translateY(26px); filter: blur(6px); transition: opacity .8s cubic-bezier(.32,.72,0,1), transform .8s cubic-bezier(.32,.72,0,1), filter .8s ease; will-change: transform, opacity; }
 .js .will-reveal.is-in { opacity: 1; transform: none; filter: none; }
