@@ -6,5 +6,6 @@ data.json.tmp
 
 # Ferramentas de agente (skills instaladas localmente)
 .agents/
+.claude/
 skills-lock.json
 design-system/
