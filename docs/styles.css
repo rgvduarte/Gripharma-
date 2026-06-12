@@ -148,6 +148,8 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 .toolbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .stats { display: flex; gap: 14px; color: var(--muted); font-size: .9rem; flex-wrap: wrap; }
 .stats b { color: var(--ink); }
+.stats .stat-alert { color: #b91c1c; font-weight: 600; }
+[data-theme="dark"] .stats .stat-alert { color: #f3a0a0; }
 
 .search {
   padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px;
@@ -287,6 +289,81 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 .check input { width: auto; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
+/* ------------------------- Pesquisa de cliente ------------------------- */
+.client-search-wrap { position: relative; }
+.client-suggestions {
+  position: absolute; left: 0; right: 0; top: 100%; z-index: 5;
+  background: var(--elev); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: var(--shadow); max-height: 220px; overflow: auto; margin-top: 4px;
+}
+.client-suggestions button {
+  display: block; width: 100%; text-align: left; border: 0; background: transparent;
+  padding: 10px 12px; cursor: pointer; font: inherit; color: var(--ink);
+  border-bottom: 1px solid var(--line);
+}
+.client-suggestions button:last-child { border-bottom: 0; }
+.client-suggestions button:hover, .client-suggestions button:focus { background: var(--hover); }
+.client-suggestions .cs-sub { display: block; font-size: .78rem; color: var(--muted); }
+
+/* ------------------------------- Receitas ------------------------------ */
+.rx-fieldset { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin: 0; }
+.rx-fieldset legend { font-size: .85rem; font-weight: 600; color: var(--text-2); padding: 0 6px; }
+.rx-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr auto; gap: 8px; margin-bottom: 8px; }
+.rx-row input { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: .88rem; min-width: 0; }
+.rx-row .icon-btn { color: var(--danger); }
+@media (max-width: 640px) { .rx-row { grid-template-columns: 1fr 1fr; } }
+
+/* -------------------------- Alerta refrigerado ------------------------- */
+.card.card-cold { border: 2px solid var(--cold); background: var(--cold-bg); }
+.cold-banner {
+  display: flex; align-items: center; gap: 8px; margin: -12px -12px 10px;
+  background: var(--cold); color: #fff; font-weight: 800; font-size: .8rem;
+  letter-spacing: .06em; text-transform: uppercase;
+  padding: 7px 12px; border-radius: 10px 10px 0 0;
+}
+.courier-list .card.card-cold { box-shadow: 0 0 0 3px rgba(3, 105, 161, .25); }
+
+/* ------------------------- Alerta de pagamento ------------------------- */
+.badge.pay-alert { background: #fde8e8; color: #b91c1c; border-color: #f5c2c2; font-weight: 700; }
+[data-theme="dark"] .badge.pay-alert { background: #3d1414; color: #f3a0a0; }
+.card.card-payalert { border-color: #ef9a9a; }
+
+/* ----------------------- Clientes / programadas ------------------------ */
+.clients-list { max-height: 230px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; }
+.clients-list .cl-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; padding: 9px 12px; border: 0; border-bottom: 1px solid var(--line);
+  background: transparent; cursor: pointer; font: inherit; color: var(--ink); text-align: left;
+}
+.clients-list .cl-row:last-child { border-bottom: 0; }
+.clients-list .cl-row:hover { background: var(--hover); }
+.clients-list .cl-sub { font-size: .78rem; color: var(--muted); }
+.clients-list .empty { padding: 14px; }
+.client-form { display: flex; flex-direction: column; gap: 12px; border-top: 1px dashed var(--line); padding-top: 14px; }
+.import-details summary { cursor: pointer; font-weight: 600; font-size: .9rem; color: var(--green-dark); }
+.import-details textarea, .import-details input[type="file"] { width: 100%; margin-top: 8px; }
+.pay-method { color: var(--muted); font-weight: 500; }
+.pay-failed { margin-top: 8px; color: #b91c1c; }
+.badge.date { background: #eef2ff; color: #3730a3; }
+[data-theme="dark"] .badge.date { background: #1e2350; color: #b6bdf5; }
+
+/* --------------------------- Talão de impressão ------------------------ */
+.print-slip { display: none; }
+@media print {
+  body.printing-slip * { visibility: hidden !important; }
+  body.printing-slip .print-slip,
+  body.printing-slip .print-slip * { visibility: visible !important; }
+  body.printing-slip .print-slip {
+    display: block; position: absolute; inset: 0 auto auto 0; width: 80mm;
+    padding: 6mm; font-family: var(--font-body); color: #000; font-size: 11pt;
+  }
+  .print-slip h2 { font-size: 14pt; margin: 0 0 2mm; }
+  .print-slip .slip-code { font-size: 20pt; font-weight: 800; margin: 1mm 0 3mm; }
+  .print-slip p { margin: 0 0 1.5mm; }
+  .print-slip hr { border: 0; border-top: 1px dashed #000; margin: 2.5mm 0; }
+  .print-slip .slip-small { font-size: 9pt; }
+}
+
 /* ------------------------------ Relatório ------------------------------ */
 .report-box { max-width: 860px; }
 .report-body { padding: 16px 18px; }
@@ -303,11 +380,11 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 .report-bycourier { font-size: .85rem; color: var(--text-2); margin-bottom: 8px; }
 
 @media print {
-  body * { visibility: hidden !important; }
-  #reportModal, #reportModal * { visibility: visible !important; }
-  #reportModal { position: absolute; inset: 0; background: #fff; padding: 0; display: block; }
-  #reportModal .modal-box { box-shadow: none; max-width: none; max-height: none; border-radius: 0; }
-  .report-actions, .icon-btn { display: none !important; }
+  body.printing-report * { visibility: hidden !important; }
+  body.printing-report #reportModal, body.printing-report #reportModal * { visibility: visible !important; }
+  body.printing-report #reportModal { position: absolute; inset: 0; background: #fff; padding: 0; display: block; }
+  body.printing-report #reportModal .modal-box { box-shadow: none; max-width: none; max-height: none; border-radius: 0; }
+  body.printing-report .report-actions, body.printing-report .icon-btn { display: none !important; }
 }
 
 /* -------------------------------- Toast -------------------------------- */

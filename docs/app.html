@@ -35,6 +35,11 @@
     <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></symbol>
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></symbol>
     <symbol id="i-printer" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></symbol>
+    <symbol id="i-repeat" viewBox="0 0 24 24"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
   </svg>
 
   <header class="topbar">
@@ -64,6 +69,8 @@
         <div class="stats" id="stats"></div>
         <div class="toolbar-actions">
           <input id="search" class="search" type="search" placeholder="Procurar cliente, morada, código…" />
+          <button id="btnClients" class="btn"><svg class="ic"><use href="#i-users"/></svg> Clientes</button>
+          <button id="btnSchedules" class="btn"><svg class="ic"><use href="#i-repeat"/></svg> Programadas</button>
           <button id="btnReport" class="btn"><svg class="ic"><use href="#i-report"/></svg> Relatório</button>
           <button id="btnNew" class="btn btn-primary">+ Novo pedido</button>
         </div>
@@ -115,33 +122,60 @@
       </div>
       <form id="orderForm" class="form">
         <input type="hidden" name="orderId" />
+        <input type="hidden" name="clientId" />
+
+        <div class="client-search-wrap">
+          <label>Procurar cliente (NIF, telefone ou nome)
+            <input id="clientSearch" type="search" placeholder="Ex.: 123456789, 91…, Maria" autocomplete="off" />
+          </label>
+          <div id="clientSuggestions" class="client-suggestions" hidden></div>
+        </div>
+
         <div class="grid2">
           <label>Nome do cliente *
             <input name="customerName" type="text" required autocomplete="off" />
           </label>
+          <label>NIF
+            <input name="customerNif" type="text" inputmode="numeric" maxlength="9" autocomplete="off" />
+          </label>
+        </div>
+        <div class="grid2">
           <label>Telefone
             <input name="customerPhone" type="tel" inputmode="tel" autocomplete="off" />
+          </label>
+          <label>Data de entrega
+            <input name="deliveryDate" type="date" />
           </label>
         </div>
         <label>Morada de entrega *
           <input name="customerAddress" type="text" required autocomplete="off" />
         </label>
+        <label class="check"><input type="checkbox" name="saveClient" checked /> <svg class="ic"><use href="#i-users"/></svg> Guardar/atualizar a ficha do cliente com estes dados</label>
+
         <label>Medicamentos / itens
           <textarea name="items" rows="3" placeholder="Ex.: Ben-u-ron 1g x2; Brufen 400 x1…"></textarea>
         </label>
+
+        <fieldset class="rx-fieldset">
+          <legend><svg class="ic"><use href="#i-file"/></svg> Receitas</legend>
+          <div id="rxList"></div>
+          <button type="button" class="btn btn-sm" id="btnAddRx">+ Adicionar receita</button>
+        </fieldset>
+
         <div class="grid2">
           <label>Valor (€)
             <input name="paymentAmount" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00" />
           </label>
-          <label>Pagamento
-            <select name="paymentStatus">
-              <option value="cobrar">A cobrar na entrega</option>
+          <label>Método de pagamento
+            <select name="paymentMethod">
+              <option value="mb" selected>MB (terminal na entrega)</option>
+              <option value="referencia">Referência MB</option>
+              <option value="numerario">Numerário</option>
               <option value="pago">Já pago</option>
             </select>
           </label>
         </div>
         <div class="checks">
-          <label class="check"><input type="checkbox" name="requiresPrescription" /> <svg class="ic"><use href="#i-file"/></svg> Precisa de receita médica</label>
           <label class="check"><input type="checkbox" name="refrigerated" /> <svg class="ic"><use href="#i-snow"/></svg> Refrigerado (frio)</label>
           <label class="check"><input type="checkbox" name="callOnArrival" /> <svg class="ic"><use href="#i-phone"/></svg> Ligar ao chegar (cliente desce)</label>
         </div>
@@ -177,7 +211,8 @@
           <input name="receivedBy" type="text" autocomplete="off" placeholder="Nome de quem recebeu" />
         </label>
         <div id="payRow" class="pay-row" hidden>
-          <label class="check"><input type="checkbox" name="paymentCollected" /> <svg class="ic"><use href="#i-wallet"/></svg> Recebi o pagamento de <b id="payAmount"></b></label>
+          <label class="check"><input type="checkbox" name="paymentCollected" /> <svg class="ic"><use href="#i-wallet"/></svg> Recebi o pagamento de <b id="payAmount"></b> <span id="payMethodLabel" class="pay-method"></span></label>
+          <label class="check pay-failed"><input type="checkbox" name="paymentFailed" /> <svg class="ic"><use href="#i-alert"/></svg> Cliente não pagou — passar a Referência MB e alertar a farmácia</label>
         </div>
         <label>Nota da entrega (opcional)
           <input name="note" type="text" autocomplete="off" placeholder="Ex.: cliente não estava, deixei com vizinha do 2º" />
@@ -189,6 +224,122 @@
       </form>
     </div>
   </div>
+
+  <!-- ====================== MODAL: FATURAR ====================== -->
+  <div id="invoiceModal" class="modal" hidden>
+    <div class="modal-box" style="max-width:380px">
+      <div class="modal-head">
+        <h3>Faturar <span id="invoiceCode" class="card-code"></span></h3>
+        <button class="icon-btn" data-close-invoice>✕</button>
+      </div>
+      <form id="invoiceForm" class="form">
+        <input type="hidden" name="orderId" />
+        <label>Valor da fatura (€)
+          <input name="invoiceAmount" type="number" step="0.01" min="0" inputmode="decimal" required placeholder="0.00" />
+        </label>
+        <p class="login-note">A fatura é emitida no Sifarma; aqui regista-se o valor e quem faturou.</p>
+        <div class="modal-actions">
+          <button type="button" class="btn" data-close-invoice>Cancelar</button>
+          <button type="submit" class="btn btn-primary"><svg class="ic"><use href="#i-receipt"/></svg> Confirmar faturação</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================== MODAL: CLIENTES ====================== -->
+  <div id="clientsModal" class="modal" hidden>
+    <div class="modal-box" style="max-width:680px">
+      <div class="modal-head">
+        <h3><svg class="ic"><use href="#i-users"/></svg> Clientes <span id="clientsCount" class="count"></span></h3>
+        <button class="icon-btn" data-close-clients>✕</button>
+      </div>
+      <div class="form">
+        <input id="clientsFilter" type="search" placeholder="Filtrar por nome, NIF ou telefone…" autocomplete="off" />
+        <div id="clientsList" class="clients-list"></div>
+
+        <form id="clientForm" class="client-form">
+          <input type="hidden" name="cId" />
+          <div class="grid2">
+            <label>Nome *<input name="cName" type="text" autocomplete="off" /></label>
+            <label>NIF<input name="cNif" type="text" inputmode="numeric" maxlength="9" autocomplete="off" /></label>
+          </div>
+          <div class="grid2">
+            <label>Telefone<input name="cPhone" type="tel" autocomplete="off" /></label>
+            <label>Notas<input name="cNotes" type="text" autocomplete="off" /></label>
+          </div>
+          <label>Morada<input name="cAddress" type="text" autocomplete="off" /></label>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-sm" id="btnClientNew">Limpar</button>
+            <button type="submit" class="btn btn-sm btn-primary">Guardar cliente</button>
+          </div>
+        </form>
+
+        <details class="import-details">
+          <summary><svg class="ic"><use href="#i-download"/></svg> Importar clientes (CSV — ex.: exportação Infoprex/Sifarma)</summary>
+          <p class="login-note">Aceita CSV com cabeçalho (deteta colunas: nome, NIF/contribuinte, telefone/telemóvel, morada). Separador ; , ou tab.</p>
+          <input type="file" id="importFile" accept=".csv,.txt" />
+          <textarea id="importText" rows="4" placeholder="…ou cola aqui o conteúdo do ficheiro"></textarea>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-sm btn-primary" id="btnImport">Importar</button>
+          </div>
+          <div id="importResult" class="login-note"></div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================== MODAL: ENTREGAS PROGRAMADAS ====================== -->
+  <div id="schedulesModal" class="modal" hidden>
+    <div class="modal-box" style="max-width:620px">
+      <div class="modal-head">
+        <h3><svg class="ic"><use href="#i-repeat"/></svg> Entregas programadas</h3>
+        <button class="icon-btn" data-close-schedules>✕</button>
+      </div>
+      <div class="form">
+        <p class="login-note">Cria o pedido automaticamente no dia certo (ex.: lar, todas as 2.ª feiras às 18h).</p>
+        <div id="schedulesList" class="clients-list"></div>
+        <form id="scheduleForm" class="client-form">
+          <div class="grid2">
+            <label>Nome / entidade *<input name="sName" type="text" autocomplete="off" placeholder="Ex.: Lar Santa Maria" /></label>
+            <label>Telefone<input name="sPhone" type="tel" autocomplete="off" /></label>
+          </div>
+          <label>Morada *<input name="sAddress" type="text" autocomplete="off" /></label>
+          <label>Medicamentos / itens<input name="sItems" type="text" autocomplete="off" /></label>
+          <div class="grid2">
+            <label>Dia da semana
+              <select name="sWeekday">
+                <option value="1">Segunda-feira</option>
+                <option value="2">Terça-feira</option>
+                <option value="3">Quarta-feira</option>
+                <option value="4">Quinta-feira</option>
+                <option value="5">Sexta-feira</option>
+                <option value="6">Sábado</option>
+                <option value="0">Domingo</option>
+              </select>
+            </label>
+            <label>Hora<input name="sTime" type="time" value="18:00" /></label>
+          </div>
+          <div class="grid2">
+            <label>Valor (€)<input name="sAmount" type="number" step="0.01" min="0" placeholder="0.00" /></label>
+            <label>Método
+              <select name="sMethod">
+                <option value="mb">MB (terminal na entrega)</option>
+                <option value="referencia">Referência MB</option>
+                <option value="numerario">Numerário</option>
+                <option value="pago">Já pago</option>
+              </select>
+            </label>
+          </div>
+          <div class="modal-actions">
+            <button type="submit" class="btn btn-sm btn-primary">Criar programação</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================== TALÃO DE IMPRESSÃO ====================== -->
+  <div id="printSlip" class="print-slip" aria-hidden="true"></div>
 
   <!-- ====================== MODAL: RELATÓRIO ====================== -->
   <div id="reportModal" class="modal" hidden>

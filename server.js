@@ -32,9 +32,11 @@ function loadData() {
     if (typeof data.counter !== 'number') data.counter = data.orders.length;
     if (typeof data.couriers !== 'object' || !data.couriers) data.couriers = {};
     if (!Array.isArray(data.operators)) data.operators = [];
+    if (!Array.isArray(data.clients)) data.clients = [];
+    if (!Array.isArray(data.schedules)) data.schedules = [];
     return data;
   } catch (_) {
-    return { orders: [], counter: 0, couriers: {}, operators: [] };
+    return { orders: [], counter: 0, couriers: {}, operators: [], clients: [], schedules: [] };
   }
 }
 
@@ -78,19 +80,93 @@ function readBody(req) {
 const str = (v) => (v == null ? '' : String(v)).trim();
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
+const PAYMENT_METHODS = ['mb', 'referencia', 'numerario', 'pago'];
+
+function sanitizePrescriptions(list) {
+  if (!Array.isArray(list)) return [];
+  return list
+    .map((p) => ({ number: str(p.number), accessCode: str(p.accessCode), optionCode: str(p.optionCode) }))
+    .filter((p) => p.number || p.accessCode || p.optionCode)
+    .slice(0, 20);
+}
+
 function sanitizeOrderInput(input) {
+  const method = PAYMENT_METHODS.includes(input.paymentMethod) ? input.paymentMethod : 'mb';
   return {
+    clientId: str(input.clientId),
     customerName: str(input.customerName),
+    customerNif: str(input.customerNif),
     customerPhone: str(input.customerPhone),
     customerAddress: str(input.customerAddress),
     items: str(input.items),
+    prescriptions: sanitizePrescriptions(input.prescriptions),
     paymentAmount: num(input.paymentAmount),
-    paymentStatus: input.paymentStatus === 'pago' ? 'pago' : 'cobrar',
-    requiresPrescription: !!input.requiresPrescription,
+    paymentMethod: method,
+    paymentStatus: method === 'pago' ? 'pago' : 'cobrar',
     refrigerated: !!input.refrigerated,
     callOnArrival: !!input.callOnArrival,
+    deliveryDate: str(input.deliveryDate),
+    deliveryTime: str(input.deliveryTime),
     notes: str(input.notes),
   };
+}
+
+function sanitizeClient(input) {
+  return {
+    name: str(input.name),
+    nif: str(input.nif),
+    phone: str(input.phone),
+    address: str(input.address),
+    notes: str(input.notes),
+  };
+}
+
+function upsertClient(data) {
+  const norm = (s) => s.toLowerCase();
+  let c = null;
+  if (data.id) c = DB.clients.find((x) => x.id === data.id);
+  if (!c && data.nif) c = DB.clients.find((x) => x.nif && x.nif === data.nif);
+  if (!c && data.phone) c = DB.clients.find((x) => x.phone && x.phone === data.phone);
+  if (!c && data.name) c = DB.clients.find((x) => norm(x.name) === norm(data.name) && !x.nif && !data.nif);
+  const ts = nowISO();
+  if (c) {
+    Object.assign(c, sanitizeClient({ ...c, ...data }), { updatedAt: ts });
+    return c;
+  }
+  c = { id: crypto.randomUUID(), ...sanitizeClient(data), createdAt: ts, updatedAt: ts };
+  DB.clients.push(c);
+  return c;
+}
+
+/* Entregas programadas recorrentes: gera o pedido do dia quando aplicável */
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+
+function materializeSchedules() {
+  const today = todayStr();
+  const weekday = new Date().getDay(); // 0=Dom … 6=Sáb
+  let changed = false;
+  for (const s of DB.schedules) {
+    if (Number(s.weekday) !== weekday || s.lastRun === today) continue;
+    const ts = nowISO();
+    DB.orders.push({
+      id: crypto.randomUUID(),
+      code: makeCode(),
+      ...sanitizeOrderInput(s.order || {}),
+      deliveryDate: today,
+      deliveryTime: str(s.time),
+      status: 'pendente',
+      registeredBy: 'Programada',
+      invoiced: false, invoicedBy: '', invoicedAt: '',
+      readyBy: '', readyAt: '', courier: '', pickedAt: '',
+      deliveredBy: '', deliveredAt: '', receivedBy: '', deliveryOutcome: '',
+      paymentAlert: false, scheduleId: s.id,
+      createdAt: ts, updatedAt: ts,
+      history: [{ status: 'pendente', at: ts, by: 'Programada', note: 'Entrega programada (' + (s.label || '') + ')' }],
+    });
+    s.lastRun = today;
+    changed = true;
+  }
+  if (changed) saveData();
 }
 
 function makeCode() {
@@ -156,6 +232,76 @@ async function handleApi(req, res, url) {
     return sendJSON(res, 405, { error: 'Método não permitido' });
   }
 
+  /* ------------------------------ Clientes ------------------------------ */
+  if (resource === 'clients') {
+    if (req.method === 'GET') return sendJSON(res, 200, { clients: DB.clients });
+    if (req.method === 'POST' && parts[2] === 'import') {
+      const body = await readBody(req);
+      const list = Array.isArray(body.clients) ? body.clients : [];
+      let count = 0;
+      for (const raw of list) {
+        const data = sanitizeClient(raw);
+        if (!data.name) continue;
+        upsertClient(data);
+        count++;
+      }
+      saveData();
+      return sendJSON(res, 200, { imported: count, total: DB.clients.length });
+    }
+    if (req.method === 'POST' && !parts[2]) {
+      const body = await readBody(req);
+      const data = sanitizeClient(body);
+      if (!data.name) return sendJSON(res, 400, { error: 'Nome do cliente é obrigatório.' });
+      const c = upsertClient({ ...data, id: str(body.id) });
+      saveData();
+      return sendJSON(res, 201, { client: c });
+    }
+    if (req.method === 'PUT' && parts[2]) {
+      const c = DB.clients.find((x) => x.id === parts[2]);
+      if (!c) return sendJSON(res, 404, { error: 'Cliente não encontrado' });
+      const body = await readBody(req);
+      Object.assign(c, sanitizeClient({ ...c, ...body }), { updatedAt: nowISO() });
+      saveData();
+      return sendJSON(res, 200, { client: c });
+    }
+    if (req.method === 'DELETE' && parts[2]) {
+      DB.clients = DB.clients.filter((x) => x.id !== parts[2]);
+      saveData();
+      return sendJSON(res, 200, { ok: true });
+    }
+    return sendJSON(res, 405, { error: 'Método não permitido' });
+  }
+
+  /* ------------------------- Entregas programadas ----------------------- */
+  if (resource === 'schedules') {
+    if (req.method === 'GET') return sendJSON(res, 200, { schedules: DB.schedules });
+    if (req.method === 'POST' && !parts[2]) {
+      const body = await readBody(req);
+      const order = sanitizeOrderInput(body.order || {});
+      if (!order.customerName || !order.customerAddress) {
+        return sendJSON(res, 400, { error: 'Nome e morada são obrigatórios.' });
+      }
+      const s = {
+        id: crypto.randomUUID(),
+        label: str(body.label) || order.customerName,
+        weekday: Math.max(0, Math.min(6, num(body.weekday))),
+        time: str(body.time),
+        order,
+        lastRun: '',
+        createdAt: nowISO(),
+      };
+      DB.schedules.push(s);
+      saveData();
+      return sendJSON(res, 201, { schedule: s });
+    }
+    if (req.method === 'DELETE' && parts[2]) {
+      DB.schedules = DB.schedules.filter((x) => x.id !== parts[2]);
+      saveData();
+      return sendJSON(res, 200, { ok: true });
+    }
+    return sendJSON(res, 405, { error: 'Método não permitido' });
+  }
+
   if (resource !== 'orders') return sendJSON(res, 404, { error: 'Recurso não encontrado' });
 
   const id = parts[2];
@@ -163,6 +309,7 @@ async function handleApi(req, res, url) {
 
   // GET /api/orders
   if (req.method === 'GET' && !id) {
+    materializeSchedules();
     const orders = [...DB.orders].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
     return sendJSON(res, 200, { orders });
   }
@@ -186,6 +333,7 @@ async function handleApi(req, res, url) {
       readyBy: '', readyAt: '',
       courier: '', pickedAt: '',
       deliveredBy: '', deliveredAt: '', receivedBy: '', deliveryOutcome: '',
+      paymentAlert: false,
       createdAt: ts, updatedAt: ts,
       history: [{ status: 'pendente', at: ts, by: operator, note: 'Pedido registado' }],
     };
@@ -220,7 +368,8 @@ async function handleApi(req, res, url) {
     order.invoicedBy = operator;
     order.invoicedAt = ts;
     order.updatedAt = ts;
-    order.history.push({ status: order.status, at: ts, by: operator, note: 'Faturado (Sifarma)' });
+    if (body.invoiceAmount != null) order.paymentAmount = num(body.invoiceAmount);
+    order.history.push({ status: order.status, at: ts, by: operator, note: 'Faturado (Sifarma)' + (body.invoiceAmount != null ? ' — ' + num(body.invoiceAmount).toFixed(2) + '€' : '') });
     saveData();
     return sendJSON(res, 200, { order });
   }
@@ -245,11 +394,29 @@ async function handleApi(req, res, url) {
       order.deliveredAt = ts;
       order.receivedBy = str(body.receivedBy);
       order.deliveryOutcome = str(body.deliveryOutcome);
-      if (body.paymentCollected) order.paymentStatus = 'pago';
+      if (body.paymentCollected) { order.paymentStatus = 'pago'; order.paymentAlert = false; }
+      if (body.paymentFailed) {
+        // Cliente não pagou na entrega → passa a Referência MB + alerta no backoffice
+        order.paymentMethod = 'referencia';
+        order.paymentAlert = true;
+        order.history.push({ status, at: ts, by: operator || order.courier, note: 'Cliente não pagou — passou a Referência MB' });
+      }
     }
     order.history.push({
       status, at: ts, by: operator || order.courier, note: str(body.note),
     });
+    saveData();
+    return sendJSON(res, 200, { order });
+  }
+
+  // POST /api/orders/:id/collect  (receber pagamento pendente)
+  if (req.method === 'POST' && action === 'collect') {
+    const body = await readBody(req);
+    const ts = nowISO();
+    order.paymentStatus = 'pago';
+    order.paymentAlert = false;
+    order.updatedAt = ts;
+    order.history.push({ status: order.status, at: ts, by: str(body.operator), note: 'Pagamento recebido (' + (order.paymentMethod || 'mb') + ')' });
     saveData();
     return sendJSON(res, 200, { order });
   }
