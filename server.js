@@ -145,7 +145,7 @@ function sanitizePrescriptions(list) {
 }
 
 function sanitizeOrderInput(input) {
-  const method = PAYMENT_METHODS.includes(input.paymentMethod) ? input.paymentMethod : 'mb';
+  const method = PAYMENT_METHODS.includes(input.paymentMethod) ? input.paymentMethod : 'mbway';
   return {
     clientId: str(input.clientId),
     customerName: str(input.customerName),
