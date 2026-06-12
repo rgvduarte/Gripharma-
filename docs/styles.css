@@ -19,6 +19,11 @@
   --font-head: "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-body: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
+  /* Curvas de easing fortes (as nativas são fracas) */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
   /* Superfícies semânticas (alternam no modo escuro) */
   --elev: #ffffff;     /* topbar, cartões, modais, painéis */
   --hover: #f9fafb;    /* hover de botões */
@@ -108,9 +113,12 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
   width: 40px; height: 40px; border-radius: 999px; border: 1px solid var(--line);
   background: var(--elev); color: var(--ink); cursor: pointer; font-weight: 600;
   font-family: var(--font-head); font-size: .9rem; padding: 0;
-  transition: background-color .15s ease, border-color .15s ease;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 160ms var(--ease-out);
 }
-.chip-btn:hover { background: var(--hover); border-color: var(--green); }
+@media (hover: hover) and (pointer: fine) {
+  .chip-btn:hover { background: var(--hover); border-color: var(--green); }
+}
+.chip-btn:active { transform: scale(0.94); }
 .chip-btn.has-label { width: auto; padding: 0 14px; }
 
 .session-area { display: flex; align-items: center; gap: 8px; }
@@ -150,10 +158,12 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
   border: 1px solid var(--line); background: var(--elev); color: var(--ink);
   padding: 9px 14px; border-radius: 10px; cursor: pointer; font-size: .92rem;
   font-weight: 600; font-family: var(--font-head); touch-action: manipulation;
-  transition: background-color .15s ease, border-color .15s ease, transform .12s ease, box-shadow .15s ease;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 160ms var(--ease-out), box-shadow 150ms ease;
 }
-.btn:hover { background: var(--hover); }
-.btn:active { transform: translateY(1px); }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover { background: var(--hover); }
+}
+.btn:active { transform: scale(0.97); }
 .btn-primary, .btn-ok { min-height: 40px; }
 .btn-primary { background: var(--green-solid); border-color: var(--green-solid); color: #fff; }
 .btn-primary:hover { filter: brightness(.92); }
@@ -241,10 +251,20 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 .modal {
   position: fixed; inset: 0; background: rgba(17, 24, 39, .5);
   display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50;
+  opacity: 1;
+  transition: opacity 200ms var(--ease-out);
 }
 .modal-box {
   background: var(--elev); border-radius: 16px; width: 100%; max-width: 540px;
   max-height: 92vh; overflow: auto; box-shadow: 0 20px 50px rgba(0, 0, 0, .25);
+  /* Modais escalam do centro (não têm gatilho ancorado) */
+  transform: scale(1); opacity: 1;
+  transition: transform 200ms var(--ease-out), opacity 200ms var(--ease-out);
+}
+/* Entrada: nunca a partir de scale(0) — nada no mundo real aparece do nada */
+@starting-style {
+  .modal { opacity: 0; }
+  .modal .modal-box { transform: scale(0.96); opacity: 0; }
 }
 .modal-head {
   display: flex; align-items: center; justify-content: space-between;
@@ -292,9 +312,15 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 
 /* -------------------------------- Toast -------------------------------- */
 .toast {
-  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  position: fixed; bottom: 20px; left: 50%;
   background: var(--toast-bg); color: var(--toast-fg); padding: 10px 18px; border-radius: 10px;
   font-size: .9rem; z-index: 60; box-shadow: var(--shadow);
+  transform: translateX(-50%) translateY(0); opacity: 1;
+  /* transitions (não keyframes): toasts disparam em rajada e retargetam suavemente */
+  transition: transform 250ms var(--ease-out), opacity 250ms var(--ease-out);
+}
+@starting-style {
+  .toast { transform: translateX(-50%) translateY(12px); opacity: 0; }
 }
 
 /* ------------------------------- Footer -------------------------------- */

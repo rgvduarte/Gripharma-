@@ -28,6 +28,10 @@
 
   --font-head: "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-body: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* Curvas de easing fortes (as nativas são fracas) */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 * { box-sizing: border-box; }
@@ -81,15 +85,20 @@ img { max-width: 100%; }
   display: inline-flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;
   border: 1px solid transparent; border-radius: 999px; font-weight: 700; font-family: var(--font-head);
   text-decoration: none; padding: 13px 16px 13px 24px; min-height: 50px; font-size: 1rem;
-  transition: transform .45s cubic-bezier(.32,.72,0,1), background-color .3s ease, box-shadow .45s cubic-bezier(.32,.72,0,1), border-color .3s ease, color .3s ease;
+  transition: transform 200ms var(--ease-out-strong), background-color 200ms ease, box-shadow 250ms var(--ease-out-strong), border-color 200ms ease, color 200ms ease;
   touch-action: manipulation;
 }
 .btn:not(:has(.btn-ic)) { padding: 13px 24px; }
 .btn-primary { background: var(--green-solid); color: #fff; box-shadow: 0 14px 30px rgba(60, 116, 20, .28); }
-.btn-primary:hover { background: var(--green-dark); transform: translateY(-2px); box-shadow: 0 20px 40px rgba(53, 98, 17, .34); }
-.btn-primary:active { transform: translateY(0) scale(.985); }
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-2px); box-shadow: 0 20px 40px rgba(53, 98, 17, .34); }
+}
+.btn-primary:active { transform: translateY(0) scale(.97); }
 .btn-ghost { background: rgba(255,255,255,.7); border-color: rgba(40,76,12,.14); color: var(--ink); padding: 13px 24px; }
-.btn-ghost:hover { border-color: var(--green-solid); color: var(--green-dark); transform: translateY(-2px); }
+@media (hover: hover) and (pointer: fine) {
+  .btn-ghost:hover { border-color: var(--green-solid); color: var(--green-dark); transform: translateY(-2px); }
+}
+.btn-ghost:active { transform: scale(.97); }
 .btn-sm { min-height: 42px; font-size: .92rem; padding: 9px 12px 9px 18px; }
 .btn-sm:not(:has(.btn-ic)) { padding: 9px 18px; }
 
@@ -97,11 +106,13 @@ img { max-width: 100%; }
 .btn-ic {
   width: 30px; height: 30px; border-radius: 999px; flex: none;
   display: grid; place-items: center; background: rgba(255, 255, 255, .18);
-  transition: transform .45s cubic-bezier(.32,.72,0,1), background-color .3s ease;
+  transition: transform 220ms var(--ease-out-strong), background-color 200ms ease;
 }
 .btn-sm .btn-ic { width: 26px; height: 26px; }
 .btn-ic .icon { width: 16px; height: 16px; }
-.btn-primary:hover .btn-ic { transform: translate(3px, -1px) scale(1.06); background: rgba(255, 255, 255, .26); }
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover .btn-ic { transform: translate(3px, -1px) scale(1.06); background: rgba(255, 255, 255, .26); }
+}
 
 /* --------------------------------- Hero -------------------------------- */
 .hero {
@@ -212,8 +223,10 @@ section { padding: 108px 0; }
 
 /* Features */
 .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
-.feature { display: flex; gap: 15px; align-items: flex-start; background: var(--surface); border: 1px solid rgba(40, 76, 12, .08); border-radius: var(--radius); padding: 28px; box-shadow: 0 1px 2px rgba(40,76,12,.04); transition: transform .45s cubic-bezier(.32,.72,0,1), box-shadow .45s cubic-bezier(.32,.72,0,1), border-color .3s ease; }
-.feature:hover { border-color: rgba(40, 76, 12, .14); transform: translateY(-6px); box-shadow: var(--shadow); }
+.feature { display: flex; gap: 15px; align-items: flex-start; background: var(--surface); border: 1px solid rgba(40, 76, 12, .08); border-radius: var(--radius); padding: 28px; box-shadow: 0 1px 2px rgba(40,76,12,.04); transition: transform 250ms var(--ease-out-strong), box-shadow 250ms var(--ease-out-strong), border-color 200ms ease; }
+@media (hover: hover) and (pointer: fine) {
+  .feature:hover { border-color: rgba(40, 76, 12, .14); transform: translateY(-6px); box-shadow: var(--shadow); }
+}
 .feat-ic { width: 26px; height: 26px; color: var(--green-dark); flex: none; margin-top: 3px; }
 .feat-body { min-width: 0; }
 .feature h3 { margin: 0 0 6px; font-size: 1.12rem; color: var(--ink); }
