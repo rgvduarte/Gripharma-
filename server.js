@@ -411,6 +411,7 @@ async function handleApi(req, res, url) {
       courier: '', pickedAt: '',
       deliveredBy: '', deliveredAt: '', receivedBy: '', deliveryOutcome: '',
       paymentAlert: false, easypay: null,
+      returned: false, returnReason: '',
       createdAt: ts, updatedAt: ts,
       history: [{ status: 'pendente', at: ts, by: operator, note: 'Pedido registado' }],
     };
@@ -461,7 +462,7 @@ async function handleApi(req, res, url) {
     order.status = status;
     order.updatedAt = ts;
 
-    if (status === 'pronto') { order.readyBy = operator; order.readyAt = ts; }
+    if (status === 'pronto') { order.readyBy = operator; order.readyAt = ts; order.returned = false; order.returnReason = ''; }
     if (status === 'recolhido') {
       order.courier = str(body.courier) || operator;
       order.pickedAt = ts;
@@ -522,6 +523,24 @@ async function handleApi(req, res, url) {
     } catch (e) {
       return sendJSON(res, 502, { error: 'Easypay: ' + e.message });
     }
+  }
+
+  // POST /api/orders/:id/return  (estafeta regressa com a encomenda → backoffice)
+  if (req.method === 'POST' && action === 'return') {
+    const body = await readBody(req);
+    const ts = nowISO();
+    order.status = 'pendente';
+    order.returned = true;
+    order.returnReason = str(body.reason);
+    order.courier = '';
+    order.pickedAt = '';
+    order.updatedAt = ts;
+    order.history.push({
+      status: 'pendente', at: ts, by: str(body.operator) || str(body.courier),
+      note: 'Devolvido à farmácia — não entregue' + (body.reason ? ' (' + str(body.reason) + ')' : ''),
+    });
+    saveData();
+    return sendJSON(res, 200, { order });
   }
 
   // POST /api/orders/:id/collect  (receber pagamento pendente)

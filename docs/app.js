@@ -160,6 +160,18 @@ const store = {
     if (MODE !== 'api') throw new Error('Easypay só funciona na versão com servidor (não na demo).');
     return postJSON('api/orders/' + id + '/easypay', 'POST', { method, operator });
   },
+  async returnOrder(id, operator, reason) {
+    if (MODE === 'api') return postJSON('api/orders/' + id + '/return', 'POST', { operator, reason });
+    const all = demoLoad(); const o = all.find((x) => x.id === id);
+    if (o) {
+      const ts = new Date().toISOString();
+      o.status = 'pendente'; o.returned = true; o.returnReason = reason || '';
+      o.courier = ''; o.pickedAt = ''; o.updatedAt = ts;
+      o.history.push({ status: 'pendente', at: ts, by: operator, note: 'Devolvido à farmácia — não entregue' + (reason ? ' (' + reason + ')' : '') });
+      demoSave(all);
+    }
+    return o;
+  },
   async collect(id, operator) {
     if (MODE === 'api') return postJSON('api/orders/' + id + '/collect', 'POST', { operator });
     const all = demoLoad(); const o = all.find((x) => x.id === id);
@@ -212,7 +224,7 @@ const store = {
     if (o) {
       const ts = new Date().toISOString();
       o.status = status; o.updatedAt = ts;
-      if (status === 'pronto') { o.readyBy = extra.operator || ''; o.readyAt = ts; }
+      if (status === 'pronto') { o.readyBy = extra.operator || ''; o.readyAt = ts; o.returned = false; o.returnReason = ''; }
       if (status === 'recolhido') { o.courier = extra.courier || extra.operator || ''; o.pickedAt = ts; }
       if (status === 'entregue') {
         o.deliveredBy = extra.courier || extra.operator || o.courier;
@@ -403,6 +415,7 @@ function fmtDatePt(d) {
 function badges(o) {
   const b = [];
   const amt = Number(o.paymentAmount) || 0;
+  if (o.returned && o.status === 'pendente') b.push(`<span class="badge returned">${ic('repeat')} Devolvido${o.returnReason ? ' · ' + esc(o.returnReason) : ''}</span>`);
   const method = PAY_LABELS[o.paymentMethod] || 'Cobrar';
   if (o.paymentAlert) b.push(`<span class="badge pay-alert">${ic('alert')} Pagamento pendente · Ref. MB${amt ? ' ' + amt.toFixed(2) + '€' : ''}</span>`);
   else if (o.paymentStatus === 'pago') b.push(`<span class="badge pay-pago">${ic('check')} Pago${amt ? ' ' + amt.toFixed(2) + '€' : ''}</span>`);
@@ -440,6 +453,7 @@ function cardClasses(o) {
   let c = 'card';
   if (o.refrigerated) c += ' card-cold';
   if (o.paymentAlert) c += ' card-payalert';
+  if (o.returned && o.status === 'pendente') c += ' card-returned';
   return c;
 }
 
@@ -483,7 +497,8 @@ function cardFarmacia(o) {
       `<button class="btn btn-sm" data-act="edit" data-id="${o.id}">Editar</button>` +
       printBtn;
   } else if (o.status === 'recolhido') {
-    actions = `<button class="btn btn-sm btn-ok" data-act="deliver" data-id="${o.id}">Confirmar entrega</button>` + printBtn;
+    actions = `<button class="btn btn-sm btn-ok" data-act="deliver" data-id="${o.id}">Confirmar entrega</button>` +
+      `<button class="btn btn-sm btn-danger" data-act="return" data-id="${o.id}">${ic('repeat')} Devolveu</button>` + printBtn;
   } else if (o.status === 'entregue' && o.paymentAlert) {
     actions = `<button class="btn btn-sm btn-primary" data-act="collect" data-id="${o.id}">${ic('wallet')} Receber pagamento</button>` + easypayButtons(o);
   }
@@ -512,7 +527,8 @@ function cardRecolher(o) {
 function cardEntrega(o) {
   return `<div class="${cardClasses(o)}">${cardCommon(o)}${stampsLine(o)}<div class="card-actions">` +
     `<a class="btn btn-sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.customerAddress)}" target="_blank" rel="noopener">${ic('map')} Mapa</a>` +
-    `<button class="btn btn-ok" data-act="deliver" data-id="${o.id}">${ic('check')} Confirmar entrega</button></div></div>`;
+    `<button class="btn btn-ok" data-act="deliver" data-id="${o.id}">${ic('check')} Confirmar entrega</button>` +
+    `<button class="btn btn-sm btn-danger" data-act="return" data-id="${o.id}">${ic('repeat')} Não entregue</button></div></div>`;
 }
 
 /* ------------------------------- Eventos ------------------------------- */
@@ -852,6 +868,12 @@ async function onCardClick(e) {
       const courier = requireCourier(); if (!courier) return;
       await store.setStatus(id, 'recolhido', { courier, operator: courier, note: 'Recolhido pelo estafeta' });
       toast('Pedido recolhido. Boa viagem!');
+    } else if (act === 'return') {
+      const operator = prefs.role === 'estafeta' ? requireCourier() : requireOperator();
+      if (!operator) return;
+      const reason = (prompt('Motivo (opcional): ausente / recusou / morada errada…') || '').trim();
+      await store.returnOrder(id, operator, reason);
+      toast('Encomenda devolvida à farmácia. Pode reagendar ou cancelar.');
     } else if (act === 'deliver') {
       return openDeliver(order);
     }
@@ -1055,7 +1077,15 @@ function printSlip(o) {
     (o.deliveryDate ? `<p>Entrega: ${esc(fmtDatePt(o.deliveryDate))}${o.deliveryTime ? ' às ' + esc(o.deliveryTime) : ''}</p>` : '') +
     '<hr/>' +
     (o.items ? `<p>${esc(o.items)}</p>` : '') +
-    ((o.prescriptions || []).length ? `<p class="slip-small">Receitas: ${o.prescriptions.map((p) => esc(p.number || p.accessCode)).filter(Boolean).join(', ')}</p>` : '') +
+    ((o.prescriptions || []).length
+      ? o.prescriptions.map((p, i) => {
+        const parts = [];
+        if (p.number) parts.push('Nº ' + esc(p.number));
+        if (p.accessCode) parts.push('Acesso ' + esc(p.accessCode));
+        if (p.optionCode) parts.push('Opção ' + esc(p.optionCode));
+        return parts.length ? `<p class="slip-small"><b>Receita ${i + 1}:</b> ${parts.join(' · ')}</p>` : '';
+      }).join('')
+      : '') +
     (o.refrigerated ? '<p><b>❄ REFRIGERADO — MANTER FRIO</b></p>' : '') +
     (o.callOnArrival ? '<p><b>Ligar ao chegar — cliente desce</b></p>' : '') +
     (o.notes ? `<p class="slip-small">Obs: ${esc(o.notes)}</p>` : '') +

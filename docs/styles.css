@@ -351,6 +351,9 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 .pay-failed { margin-top: 8px; color: #b91c1c; }
 .badge.date { background: #eef2ff; color: #3730a3; }
 [data-theme="dark"] .badge.date { background: #1e2350; color: #b6bdf5; }
+.badge.returned { background: #fef0d9; color: #9a4a06; border-color: #f3d2a8; font-weight: 700; }
+[data-theme="dark"] .badge.returned { background: #3a2a12; color: #f0c089; }
+.card.card-returned { border-color: #f0b878; box-shadow: 0 0 0 2px rgba(154, 74, 6, .14); }
 
 /* --------------------------- Talão de impressão ------------------------ */
 .print-slip { display: none; }
