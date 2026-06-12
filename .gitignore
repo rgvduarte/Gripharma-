@@ -9,3 +9,5 @@ data.json.tmp
 .claude/
 skills-lock.json
 design-system/
+
+.env

@@ -17,7 +17,8 @@ const PREFS_KEY = 'gripharma_prefs_v1';
 const OPERATORS_KEY = 'gripharma_operators_v1';
 const CLIENTS_KEY = 'gripharma_clients_v1';
 const SCHEDULES_KEY = 'gripharma_schedules_v1';
-const PAY_LABELS = { mb: 'MB na entrega', referencia: 'Ref. MB', numerario: 'Numerário', pago: 'Pago' };
+const PAY_LABELS = { mb: 'MB na entrega', mbway: 'MB WAY', referencia: 'Ref. MB', numerario: 'Numerário', pago: 'Pago' };
+let EASYPAY_ON = false;
 const WEEKDAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 function demoOperators() { try { return JSON.parse(localStorage.getItem(OPERATORS_KEY)) || []; } catch (_) { return []; } }
 function demoClients() { try { return JSON.parse(localStorage.getItem(CLIENTS_KEY)) || []; } catch (_) { return []; } }
@@ -47,7 +48,13 @@ async function init() {
 async function detectMode() {
   try {
     const r = await fetch('api/health', { cache: 'no-store' });
-    if (r.ok) { MODE = 'api'; setBadge('Servidor ligado · dados partilhados', false); return; }
+    if (r.ok) {
+      const h = await r.json().catch(() => ({}));
+      EASYPAY_ON = !!h.easypay;
+      MODE = 'api';
+      setBadge('Servidor ligado · dados partilhados' + (EASYPAY_ON ? ' · Easypay' : ''), false);
+      return;
+    }
   } catch (_) { /* sem servidor */ }
   MODE = 'demo';
   setBadge('Modo demonstração (dados só neste browser)', true);
@@ -148,6 +155,10 @@ const store = {
   async deleteSchedule(id) {
     if (MODE === 'api') { await fetch('api/schedules/' + id, { method: 'DELETE' }); return; }
     demoSaveSchedules(demoSchedules().filter((s) => s.id !== id));
+  },
+  async easypay(id, method, operator) {
+    if (MODE !== 'api') throw new Error('Easypay só funciona na versão com servidor (não na demo).');
+    return postJSON('api/orders/' + id + '/easypay', 'POST', { method, operator });
   },
   async collect(id, operator) {
     if (MODE === 'api') return postJSON('api/orders/' + id + '/collect', 'POST', { operator });
@@ -416,6 +427,15 @@ function stampsLine(o) {
   return s.length ? `<div class="history-mini">${s.map((x) => `<div>• ${x}</div>`).join('')}</div>` : '';
 }
 
+function easypayLine(o) {
+  const e = o.easypay;
+  if (!e) return '';
+  if (e.method === 'mb' && e.reference) {
+    return `<div class="easypay-ref">${ic('wallet')} <b>Ref. MB</b> · Entidade ${esc(e.entity)} · Ref. <b>${esc(e.reference)}</b> · ${(Number(e.value) || 0).toFixed(2)}€${e.status === 'paid' ? ' ✓ pago' : ''}</div>`;
+  }
+  return `<div class="easypay-ref">${ic('phone')} <b>MB WAY</b> enviado · ${(Number(e.value) || 0).toFixed(2)}€ · ${e.status === 'paid' ? '✓ pago' : 'a aguardar confirmação'}</div>`;
+}
+
 function cardClasses(o) {
   let c = 'card';
   if (o.refrigerated) c += ' card-cold';
@@ -433,8 +453,17 @@ function cardCommon(o) {
     (o.items ? `<div class="card-items">${ic('pill')} ${esc(o.items)}</div>` : '') +
     ((o.prescriptions || []).length ? `<div class="card-line">${ic('file')} ${o.prescriptions.map((p) => esc(p.number || p.accessCode)).filter(Boolean).join(' · ')}</div>` : '') +
     (o.notes ? `<div class="card-line">${ic('pencil')} ${esc(o.notes)}</div>` : '') +
+    easypayLine(o) +
     `<div class="badges">${badges(o)}</div>`
   );
+}
+
+function easypayButtons(o) {
+  if (!EASYPAY_ON) return '';
+  let b = '';
+  if (o.customerPhone) b += `<button class="btn btn-sm" data-act="easypay" data-method="mbw" data-id="${o.id}">${ic('phone')} MB WAY</button>`;
+  b += `<button class="btn btn-sm" data-act="easypay" data-method="mb" data-id="${o.id}">${ic('wallet')} Ref. MB</button>`;
+  return b;
 }
 
 function cardFarmacia(o) {
@@ -456,7 +485,11 @@ function cardFarmacia(o) {
   } else if (o.status === 'recolhido') {
     actions = `<button class="btn btn-sm btn-ok" data-act="deliver" data-id="${o.id}">Confirmar entrega</button>` + printBtn;
   } else if (o.status === 'entregue' && o.paymentAlert) {
-    actions = `<button class="btn btn-sm btn-primary" data-act="collect" data-id="${o.id}">${ic('wallet')} Receber pagamento</button>`;
+    actions = `<button class="btn btn-sm btn-primary" data-act="collect" data-id="${o.id}">${ic('wallet')} Receber pagamento</button>` + easypayButtons(o);
+  }
+  // gerar pagamento Easypay proativamente quando o método é MB WAY / Referência
+  if (['pronto', 'recolhido'].includes(o.status) && ['referencia', 'mbway'].includes(o.paymentMethod) && !o.easypay && o.paymentStatus !== 'pago') {
+    actions += easypayButtons(o);
   }
   return `<div class="${cardClasses(o)}">${cardCommon(o)}${stampsLine(o)}<div class="card-actions">${actions}</div></div>`;
 }
@@ -798,6 +831,14 @@ async function onCardClick(e) {
       const operator = requireOperator(); if (!operator) return;
       await store.collect(id, operator);
       toast('Pagamento recebido.');
+    } else if (act === 'easypay') {
+      const operator = requireOperator(); if (!operator) return;
+      const method = btn.dataset.method === 'mb' ? 'mb' : 'mbw';
+      toast(method === 'mbw' ? 'A enviar MB WAY…' : 'A gerar referência…');
+      const updated = await store.easypay(id, method, operator);
+      toast(method === 'mbw'
+        ? 'MB WAY enviado para ' + (updated.customerPhone || 'o cliente') + '.'
+        : 'Ref. MB: Ent. ' + updated.easypay.entity + ' · ' + updated.easypay.reference);
     } else if (act === 'print') {
       if (order) printSlip(order);
       return;

@@ -343,6 +343,11 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 .import-details summary { cursor: pointer; font-weight: 600; font-size: .9rem; color: var(--green-dark); }
 .import-details textarea, .import-details input[type="file"] { width: 100%; margin-top: 8px; }
 .pay-method { color: var(--muted); font-weight: 500; }
+.easypay-ref {
+  font-size: .82rem; margin: 8px 0 2px; padding: 7px 10px; border-radius: 8px;
+  background: var(--green-soft); color: var(--green-dark); display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+}
+.easypay-ref .ic { color: var(--green-dark); }
 .pay-failed { margin-top: 8px; color: #b91c1c; }
 .badge.date { background: #eef2ff; color: #3730a3; }
 [data-theme="dark"] .badge.date { background: #1e2350; color: #b6bdf5; }

@@ -23,6 +23,60 @@ const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, 'data.json');
 
 const STATUSES = ['pendente', 'pronto', 'recolhido', 'entregue', 'cancelado'];
 
+/* ------------------------------- Easypay -------------------------------- */
+/* Credenciais por variáveis de ambiente (nunca no código):
+   EASYPAY_ACCOUNT_ID, EASYPAY_API_KEY, EASYPAY_ENV (test|production),
+   EASYPAY_DEFAULT_EMAIL (opcional), EASYPAY_WEBHOOK_SECRET (opcional),
+   EASYPAY_BASE_URL (opcional, p/ testes). */
+const EASYPAY = {
+  accountId: process.env.EASYPAY_ACCOUNT_ID || '',
+  apiKey: process.env.EASYPAY_API_KEY || '',
+  env: process.env.EASYPAY_ENV || 'test',
+  baseUrl: (process.env.EASYPAY_BASE_URL
+    || (process.env.EASYPAY_ENV === 'production' ? 'https://api.easypay.pt/2.0' : 'https://api.test.easypay.pt/2.0')).replace(/\/+$/, ''),
+  defaultEmail: process.env.EASYPAY_DEFAULT_EMAIL || '',
+  webhookSecret: process.env.EASYPAY_WEBHOOK_SECRET || '',
+};
+const easypayConfigured = () => !!(EASYPAY.accountId && EASYPAY.apiKey);
+
+async function easypayCreate({ method, value, key, customer }) {
+  const body = {
+    method,                 // 'mbw' (MB WAY) ou 'mb' (referência Multibanco)
+    type: 'sale',
+    currency: 'EUR',
+    value: Number(Number(value).toFixed(2)),
+    key: key || undefined,  // a nossa referência interna (código do pedido)
+    customer: {
+      name: customer.name || 'Cliente',
+      email: customer.email || EASYPAY.defaultEmail || undefined,
+      ...(customer.phone ? { phone: String(customer.phone).replace(/\D/g, ''), phone_indicative: customer.indicative || '+351' } : {}),
+      ...(customer.fiscalNumber ? { fiscal_number: customer.fiscalNumber } : {}),
+    },
+  };
+  const r = await fetch(EASYPAY.baseUrl + '/single', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', AccountId: EASYPAY.accountId, ApiKey: EASYPAY.apiKey },
+    body: JSON.stringify(body),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    let msg = data && (data.message || data.error);
+    if (!msg && data && data.errors) msg = Array.isArray(data.errors) ? data.errors.join('; ') : JSON.stringify(data.errors);
+    throw new Error(typeof msg === 'string' && msg ? msg : 'Easypay erro ' + r.status);
+  }
+  const m = data.method || {};
+  return {
+    id: str(data.id),
+    method: m.type || method,
+    entity: str(m.entity),
+    reference: str(m.reference),
+    value: m.value != null ? Number(m.value) : Number(value),
+    status: m.status || 'pending',
+    url: str(m.url),
+    createdAt: nowISO(),
+  };
+}
+
 /* ----------------------------- Persistência ----------------------------- */
 
 function loadData() {
@@ -80,7 +134,7 @@ function readBody(req) {
 const str = (v) => (v == null ? '' : String(v)).trim();
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
-const PAYMENT_METHODS = ['mb', 'referencia', 'numerario', 'pago'];
+const PAYMENT_METHODS = ['mb', 'mbway', 'referencia', 'numerario', 'pago'];
 
 function sanitizePrescriptions(list) {
   if (!Array.isArray(list)) return [];
@@ -182,7 +236,30 @@ async function handleApi(req, res, url) {
   const parts = url.pathname.split('/').filter(Boolean); // ['api', resource, id, action]
   const resource = parts[1];
 
-  if (resource === 'health') return sendJSON(res, 200, { ok: true, time: nowISO() });
+  if (resource === 'health') return sendJSON(res, 200, { ok: true, time: nowISO(), easypay: easypayConfigured() });
+
+  /* ----------------------- Easypay (webhook entrada) -------------------- */
+  if (resource === 'easypay' && parts[2] === 'webhook') {
+    if (req.method !== 'POST') return sendJSON(res, 405, { error: 'Método não permitido' });
+    if (EASYPAY.webhookSecret && url.searchParams.get('secret') !== EASYPAY.webhookSecret) {
+      return sendJSON(res, 401, { error: 'secret inválido' });
+    }
+    const body = await readBody(req);
+    const payId = str(body.id) || (body.payment && str(body.payment.id));
+    const key = str(body.key);
+    const status = (str(body.status) || (body.method && str(body.method.status)) || '').toLowerCase();
+    const ord = DB.orders.find((o) => o.easypay && (o.easypay.id === payId || (key && o.code === key)));
+    if (ord && ['paid', 'success', 'captured', 'completed'].includes(status)) {
+      const ts = nowISO();
+      ord.paymentStatus = 'pago';
+      ord.paymentAlert = false;
+      if (ord.easypay) ord.easypay.status = 'paid';
+      ord.updatedAt = ts;
+      ord.history.push({ status: ord.status, at: ts, by: 'Easypay', note: 'Pagamento confirmado (' + (ord.paymentMethod || '') + ')' });
+      saveData();
+    }
+    return sendJSON(res, 200, { ok: true }); // 200 sempre, para a Easypay não repetir
+  }
 
   /* --------------------------- Estafetas / GPS -------------------------- */
   if (resource === 'couriers') {
@@ -333,7 +410,7 @@ async function handleApi(req, res, url) {
       readyBy: '', readyAt: '',
       courier: '', pickedAt: '',
       deliveredBy: '', deliveredAt: '', receivedBy: '', deliveryOutcome: '',
-      paymentAlert: false,
+      paymentAlert: false, easypay: null,
       createdAt: ts, updatedAt: ts,
       history: [{ status: 'pendente', at: ts, by: operator, note: 'Pedido registado' }],
     };
@@ -407,6 +484,44 @@ async function handleApi(req, res, url) {
     });
     saveData();
     return sendJSON(res, 200, { order });
+  }
+
+  // POST /api/orders/:id/easypay  (gerar MB WAY ou Ref. MB via Easypay)
+  if (req.method === 'POST' && action === 'easypay') {
+    if (!easypayConfigured()) {
+      return sendJSON(res, 503, { error: 'Easypay não configurado no servidor (EASYPAY_ACCOUNT_ID / EASYPAY_API_KEY).' });
+    }
+    const body = await readBody(req);
+    const method = body.method === 'mb' ? 'mb' : 'mbw';
+    const value = num(body.value) || num(order.paymentAmount);
+    if (!(value > 0)) return sendJSON(res, 400, { error: 'Define primeiro o valor a cobrar (faturar).' });
+    if (method === 'mbw' && !order.customerPhone) {
+      return sendJSON(res, 400, { error: 'MB WAY precisa do telefone do cliente.' });
+    }
+    try {
+      const pay = await easypayCreate({
+        method,
+        value,
+        key: order.code,
+        customer: { name: order.customerName, phone: order.customerPhone, fiscalNumber: order.customerNif },
+      });
+      const ts = nowISO();
+      order.easypay = pay;
+      order.paymentMethod = method === 'mbw' ? 'mbway' : 'referencia';
+      order.paymentAmount = value;
+      order.paymentAlert = order.paymentStatus !== 'pago';
+      order.updatedAt = ts;
+      order.history.push({
+        status: order.status, at: ts, by: str(body.operator),
+        note: method === 'mbw'
+          ? 'MB WAY enviado ao cliente (Easypay) · ' + value.toFixed(2) + '€'
+          : 'Referência MB gerada (Easypay) · Ent. ' + pay.entity + ' Ref. ' + pay.reference + ' · ' + value.toFixed(2) + '€',
+      });
+      saveData();
+      return sendJSON(res, 200, { order });
+    } catch (e) {
+      return sendJSON(res, 502, { error: 'Easypay: ' + e.message });
+    }
   }
 
   // POST /api/orders/:id/collect  (receber pagamento pendente)

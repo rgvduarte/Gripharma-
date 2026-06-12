@@ -35,6 +35,33 @@ lado com o **Sifarma/GLINTT** (não o substitui — apenas organiza as entregas)
 Os dados ficam guardados no ficheiro `data.json` (no PC da farmácia).
 Não há dependências externas — corre só com o Node.
 
+## 💳 Pagamentos Easypay (MB WAY e Referência Multibanco)
+
+Opcional. Permite **gerar MB WAY** (push para o telemóvel do cliente) e
+**referências Multibanco** dentro da app, com confirmação automática por webhook.
+
+1. Copiar `.env.example` para `.env` e preencher as credenciais Easypay:
+   ```
+   EASYPAY_ACCOUNT_ID=...
+   EASYPAY_API_KEY=...
+   EASYPAY_ENV=test            # ou production
+   EASYPAY_DEFAULT_EMAIL=farmacia@exemplo.pt
+   EASYPAY_WEBHOOK_SECRET=...  # opcional
+   ```
+   > As credenciais **nunca** vão para o GitHub (`.env` está no `.gitignore`).
+2. Arrancar com as variáveis (Windows PowerShell):
+   ```powershell
+   $env:EASYPAY_ACCOUNT_ID="..."; $env:EASYPAY_API_KEY="..."; node server.js
+   ```
+   (ou usar um carregador de `.env`). Em macOS/Linux: `export $(cat .env | xargs) && node server.js`.
+3. Na conta Easypay, configurar o **webhook** para apontar para
+   `https://<o-vosso-servidor>/api/easypay/webhook` (com `?secret=` se definido).
+   Assim que o cliente paga, o pedido fica **Pago** automaticamente.
+
+Sem credenciais, a app funciona na mesma — os botões MB WAY / Ref. MB só
+aparecem quando o Easypay está configurado. **Não funciona na demo do GitHub
+Pages** (essa não tem servidor).
+
 ## 🌐 Demonstração online
 
 A pasta `docs/` é uma versão **estática de demonstração** publicada via
